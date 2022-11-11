@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from customExceptions import InvalidMoveError
 import numpy as np
 import math
@@ -39,6 +40,14 @@ class Agent:
 
 	def step(self):
 		raise NotImplementedError
+
+	def tilesInRadiusGen(self, radius, resolution = 1, minDist = -1):
+		for i in range(-radius, radius + 1, resolution):
+			jRad = radius - np.abs(i)
+			for j in range(-jRad, jRad + 1, resolution):
+				if abs(i) + abs(j) < minDist:
+					continue
+				yield self.x + i, self.y + j
 
 	def __str__(self):
 		return self.symbol

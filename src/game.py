@@ -79,13 +79,6 @@ class GameInstance:
 		lines = [startEnd]
 		for y in range(self.rows):
 			newLine = [(self.getAgentAt(x, y).symbol if self.isAgentAt(x, y) else self.at(x, y)) for x in range(self.cols)]
-			"""
-			for x in range(self.cols):
-				# Replace ID with agent symbol for print
-				if self.isAgentAt(x, y):
-					newLine.append(f' {self.getAgentAt(x, y).symbol}')
-				else:
-					newLine.append(self.at(x, y))"""
 			lines.append('|' + '|'.join(newLine) + '|')
 		lines.append(startEnd)
 		return '\n'.join(lines)
