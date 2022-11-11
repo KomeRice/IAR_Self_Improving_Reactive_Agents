@@ -60,8 +60,8 @@ class MainAgent(Agent):
 		self.energy = baseEnergy
 
 	def step(self):
-		choices = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
-		random.choice(choices)()
+		action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
+		random.choice(action)()
 
 		return
 
