@@ -1,5 +1,6 @@
 import gameAgents as ag
 from customExceptions import InvalidMoveError
+import numpy as np
 
 class GameInstance:
 	def __init__(self, rows = 25, cols = 25, initialFood = 10):
@@ -47,28 +48,31 @@ class GameInstance:
 		# Main Agent special behaviors
 		if isinstance(agent, ag.MainAgent):
 			# Check for food
+			reward = 0
 			if self.isAgentAt(newX, newY):
 				agentAtLoc = self.getAgentAt(newX, newY)
 				if agentAtLoc.symbol == '$':
 					agent.energy += agentAtLoc.energyGain
+					reward+=0.4
 					self.remainingFood -= 1
 					if self.remainingFood == 0:
 						print('Game over: Won by agent')
+						return True,reward
 				# Check for enemy
 				elif agentAtLoc.symbol == 'E':
 					print('Game over: Died to enemy')
-					return
-
+					return True,-1
 			agent.energy -= 1
-
 			# Check for energy
 			if agent.energy == 0:
 				print('Game over: Died to exhaustion')
+				return True,reward
 
 		self.grid[agent.y][agent.x] = ' '
 		self.grid[newY][newX] = agent.id
 		agent.x = newX
 		agent.y = newY
+		return False,reward
 
 	def getGameStateString(self):
 		startEnd = '+' + ''.join('-+' for _ in range(self.cols))
@@ -89,7 +93,15 @@ class GameInstance:
 	def printGameState(self):
 		print(self.getGameStateString())
 
-	def step(self):
+	def step(self,agent):
+		done,reward = self.mainAgent.step()
 		for k in self.agents:
+			if isinstance(self.agents[k], ag.MainAgent):
+				continue
 			self.agents[k].step()
+		obs = self.observation()
+		return obs,reward,done
+
+	def observation(self):
+		return obs
 

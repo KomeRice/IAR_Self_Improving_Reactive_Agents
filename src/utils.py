@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import namedtuple, deque
 import random
+import math
 
 class NN(nn.Module):
     def __init__(self, inSize, outSize, layers=[], finalActivation=None, activation=torch.tanh,dropout=0.0):
@@ -60,18 +61,8 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
-class EGreedyActionSelector(QconAgent):
-    def __init__(self, epsilon):
-        super().__init__()
-        self.epsilon = epsilon
+    def chooseToSave(self,m):#appendix b
+        w = min(3,1+0.02*m)
+        r = random.random()
+        return int(m*math.log(1+r*(math.e**w-1))/w)
 
-    def forward(self, t, **kwargs):
-        q_values = self.get(("q_values", t))
-        nb_actions = q_values.size()[1]
-        size = q_values.size()[0]
-        is_random = torch.rand(size).lt(self.epsilon).float()
-        random_action = torch.randint(low=0, high=nb_actions, size=(size,))
-        max_action = q_values.max(1)[1]
-        action = is_random * random_action + (1 - is_random) * max_action
-        action = action.long()
-        self.set(("action", t), action)
