@@ -40,7 +40,7 @@ class Agent:
 		raise NotImplementedError
 
 	def tilesInRadiusGen(self, radius, resolution = 1, minDist = -1):
-		for i in range(-radius, radius + 1):
+		for i in range(-radius, radius + 1, resolution):
 			jRad = radius - np.abs(i)
 			for j in range(-jRad, jRad + 1, resolution):
 				if abs(i) + abs(j) < minDist:
