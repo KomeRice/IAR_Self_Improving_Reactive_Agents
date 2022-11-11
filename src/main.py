@@ -17,5 +17,11 @@ def main(args):
 	game = GridReader.readGrid(filePath)
 	game.printGameState()
 
+	print(game.mainAgent.x, game.mainAgent.y)
+	print(game.mainAgent.doFoodSensor())
+	print(game.mainAgent.doEnemySensor())
+	print(game.mainAgent.doObstacleSensor())
+
+
 if __name__ == '__main__':
 	main(sys.argv)
