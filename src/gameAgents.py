@@ -39,10 +39,12 @@ class Agent:
 	def step(self):
 		raise NotImplementedError
 
-	def tilesInRadiusGen(self, radius, resolution = 1):
+	def tilesInRadiusGen(self, radius, resolution = 1, minDist = -1):
 		for i in range(-radius, radius + 1):
 			jRad = radius - np.abs(i)
 			for j in range(-jRad, jRad + 1, resolution):
+				if abs(i) + abs(j) < minDist:
+					continue
 				yield self.x + i, self.y + j
 
 	def __str__(self):
