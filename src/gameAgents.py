@@ -40,9 +40,10 @@ class Agent:
 
 	def tilesInRadiusGen(self, radius, resolution = 1, minDist = -1):
 		for i in range(-radius, radius + 1, resolution):
-			jRad = radius - np.abs(i)
+			jRad = radius - abs(i)
 			for j in range(-jRad, jRad + 1, resolution):
-				if abs(i) + abs(j) < minDist:
+				if abs(i) + abs(j) < minDist or \
+						not ((0 < self.x + i < self.gameInst.cols) and (0 < self.y + j < self.gameInst.rows)):
 					continue
 				yield self.x + i, self.y + j
 
