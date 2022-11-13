@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from customExceptions import InvalidMoveError
 
 class Agent:
@@ -38,12 +39,11 @@ class Agent:
 	def step(self):
 		raise NotImplementedError
 
-	def tilesInRadiusGen(self, radius, resolution = 1, minDist = -1):
+	def tilesInRadiusGen(self, radius, resolution = 1, minDist = 1):
 		for i in range(-radius, radius + 1, resolution):
 			jRad = radius - abs(i)
 			for j in range(-jRad, jRad + 1, resolution):
-				if abs(i) + abs(j) < minDist or \
-						not ((0 < self.x + i < self.gameInst.cols) and (0 < self.y + j < self.gameInst.rows)):
+				if abs(i) + abs(j) < minDist:
 					continue
 				yield self.x + i, self.y + j
 
@@ -81,45 +81,65 @@ class MainAgent(Agent):
 		sensorX = {
 			'radius': 2,
 			'resolution': 1,
-			'minDist': 0
+			'minDist': 1
 		}
 
 		self.foodSensor = [sensorX, sensorO, sensorY]
-		self.enemySensor = [sensorX, sensorY]
+		self.enemySensor = [sensorX, sensorO]
 		self.obstacleSensor = [{
-			'radius': 5,
+			'radius': 4,
 			'resolution': 1,
-			'minDist': 0
+			'minDist': 1
 		}]
 
 	def doFoodSensor(self):
 		obsList = []
 		for sensor in self.foodSensor:
 			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-				if self.gameInst.isAgentAt(x, y):
-					agent = self.gameInst.getAgentAt(x, y)
-					if isinstance(agent, FoodAgent):
-						obsList.append(((x, y), agent))
+				try:
+					if self.gameInst.isAgentAt(x, y):
+						agent = self.gameInst.getAgentAt(x, y)
+						if isinstance(agent, FoodAgent):
+							obsList.append(1)
+							continue
+				except IndexError:
+					obsList.append(0)
+					continue
 
-		return obsList
+				obsList.append(0)
+		return np.array(obsList)
 
 	def doEnemySensor(self):
 		obsList = []
 		for sensor in self.enemySensor:
 			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-				if self.gameInst.isAgentAt(x, y):
-					agent = self.gameInst.getAgentAt(x, y)
-					if isinstance(agent, EnemyAgent):
-						obsList.append(((x, y), agent))
-		return obsList
+				try:
+					if self.gameInst.isAgentAt(x, y):
+						agent = self.gameInst.getAgentAt(x, y)
+						if isinstance(agent, EnemyAgent):
+							obsList.append(1)
+							continue
+				except IndexError:
+					obsList.append(0)
+					continue
+
+				obsList.append(0)
+		return np.array(obsList)
 
 	def doObstacleSensor(self):
 		obsList = []
 		for sensor in self.obstacleSensor:
 			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-				if self.gameInst.at(x, y) == 'O':
-					obsList.append((x, y))
-		return obsList
+				try:
+					if self.gameInst.at(x, y) == 'O':
+						obsList.append(1)
+						continue
+				except IndexError:
+					obsList.append(0)
+					continue
+
+				obsList.append(0)
+		return np.array(obsList)
 
 	def step(self):
 		choices = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
