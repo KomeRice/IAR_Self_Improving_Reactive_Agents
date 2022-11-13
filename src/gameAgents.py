@@ -1,5 +1,4 @@
 import random
-import numpy as np
 from customExceptions import InvalidMoveError
 import numpy as np
 import math
