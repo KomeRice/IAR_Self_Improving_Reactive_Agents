@@ -18,9 +18,14 @@ def main(args):
 	game.printGameState()
 
 	print(game.mainAgent.x, game.mainAgent.y)
-	print(game.mainAgent.doFoodSensor())
-	print(game.mainAgent.doEnemySensor())
-	print(game.mainAgent.doObstacleSensor())
+
+	food = game.mainAgent.doFoodSensor()
+	enemy = game.mainAgent.doEnemySensor()
+	obst = game.mainAgent.doObstacleSensor()
+	
+	print('Food: ', food, len(food))
+	print('Enemy: ', enemy, len(enemy))
+	print('Obstacle: ', obst, len(obst))
 
 
 if __name__ == '__main__':
