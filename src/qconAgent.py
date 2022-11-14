@@ -15,8 +15,8 @@ print(f"Using {device} device")
 
 class QconAgent(NN):
     def __init__(self, nbStep = 10000,batch_size=32):
-        self.inNN = NN(28,1,activation=torch.nn.ReLU()).to(device)
-        self.targetNN = NN(28,1,activation=torch.nn.ReLU()).to(device)
+        self.inNN = NN(145,1,activation=torch.nn.ReLU()).to(device)
+        self.targetNN = NN(145,1,activation=torch.nn.ReLU()).to(device)
         self.targetNN.load_state_dict(self.net.state_dict())
         self.epsilon = 1
         self.discount_factor = 0.9

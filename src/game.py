@@ -8,6 +8,7 @@ class GameInstance:
 		self.cols = cols
 		self.grid = [[' ' for _ in range(cols)] for _ in range(rows)]
 		self.remainingFood = initialFood
+		self.initialFood = initialFood
 		self.agents = {}
 		self.mainAgent = None
 
@@ -103,5 +104,20 @@ class GameInstance:
 		return obs,reward,done
 
 	def observation(self):
+		food = self.mainAgent.doFoodSensor()
+		ennemy = self.mainAgent.doEnemySensor()
+		obstacle = self.mainAgent.doObstacleSensor()
+		energy = self.mainAgent.energy
+		max_energy = self.mainAgent.max_energy
+		previous_action = self.mainAgent.previous_action
+
+		obs = [*ennemy,*food,*obstacle]
+		for i in range(16):
+			if i<=round(16/max_energy*energy):
+				obs.append(1)
+			else:
+				obs.append(0)
+		obs = obs + previous_action
+		obs = obs + self.mainAgent.didCollide
 		return obs
 

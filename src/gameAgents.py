@@ -60,11 +60,96 @@ class MainAgent(Agent):
 	def __init__(self, gameInst, x = 0, y = 0, symbol = 'I', baseEnergy = 40):
 		super().__init__(gameInst, x, y, symbol)
 		self.energy = baseEnergy
+		self.max_energy = baseEnergy + 15 * gameInst.initialFood
+		self.didCollide = 0
 
+<<<<<<< Updated upstream
+=======
+		sensorY = {
+			'radius': 10,
+			'resolution': 2,
+			'minDist': 10
+		}
+		sensorO = {
+			'radius': 6,
+			'resolution': 2,
+			'minDist': 3
+		}
+		sensorX = {
+			'radius': 2,
+			'resolution': 1,
+			'minDist': 1
+		}
+
+		self.foodSensor = [sensorX, sensorO, sensorY]
+		self.enemySensor = [sensorX, sensorO]
+		self.obstacleSensor = [{
+			'radius': 4,
+			'resolution': 1,
+			'minDist': 1
+		}]
+
+	def doFoodSensor(self):
+		obsList = []
+		for sensor in self.foodSensor:
+			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+				try:
+					if self.gameInst.isAgentAt(x, y):
+						agent = self.gameInst.getAgentAt(x, y)
+						if isinstance(agent, FoodAgent):
+							obsList.append(1)
+							continue
+				except IndexError:
+					obsList.append(0)
+					continue
+
+				obsList.append(0)
+		return obsList
+
+	def doEnemySensor(self):
+		obsList = []
+		for sensor in self.enemySensor:
+			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+				try:
+					if self.gameInst.isAgentAt(x, y):
+						agent = self.gameInst.getAgentAt(x, y)
+						if isinstance(agent, EnemyAgent):
+							obsList.append(1)
+							continue
+				except IndexError:
+					obsList.append(0)
+					continue
+
+				obsList.append(0)
+		return obsList
+
+	def doObstacleSensor(self):
+		obsList = []
+		for sensor in self.obstacleSensor:
+			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+				try:
+					if self.gameInst.at(x, y) == 'O':
+						obsList.append(1)
+						continue
+				except IndexError:
+					obsList.append(0)
+					continue
+
+				obsList.append(0)
+		return obsList
+
+>>>>>>> Stashed changes
 	def step(self):
 		action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
-		random.choice(action)()
-
+		choice = random.choice(action)
+		self.previous_action = []
+		self.didCollide = 0
+		for a in action:
+			if a == choice:
+				self.previous_action.append(1)
+			else:
+				self.previous_action.append(0)
+		choice()
 		return
 
 class EnemyAgent(Agent):
