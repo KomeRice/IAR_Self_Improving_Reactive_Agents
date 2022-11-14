@@ -60,6 +60,7 @@ class MainAgent(Agent):
 	def __init__(self, gameInst, x = 0, y = 0, symbol = 'I', baseEnergy = 40):
 		super().__init__(gameInst, x, y, symbol)
 		self.energy = baseEnergy
+		self.previous_action = [0,0,0,0]
 		self.max_energy = baseEnergy + 15 * gameInst.initialFood
 		self.didCollide = 0
 
