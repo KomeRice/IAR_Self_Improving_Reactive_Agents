@@ -64,8 +64,6 @@ class MainAgent(Agent):
 		self.max_energy = baseEnergy + 15 * gameInst.initialFood
 		self.didCollide = 0
 
-<<<<<<< Updated upstream
-=======
 		sensorY = {
 			'radius': 10,
 			'resolution': 2,
@@ -139,7 +137,6 @@ class MainAgent(Agent):
 				obsList.append(0)
 		return obsList
 
->>>>>>> Stashed changes
 	def step(self):
 		action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
 		choice = random.choice(action)
