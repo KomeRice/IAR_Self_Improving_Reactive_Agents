@@ -62,7 +62,6 @@ class MainAgent(Agent):
 		self.energy = baseEnergy
 		self.previous_action = [0,0,0,0]
 		self.max_energy = baseEnergy + 15 * gameInst.initialFood
-		self.didCollide = 0
 
 		sensorY = {
 			'radius': 10,
@@ -141,7 +140,6 @@ class MainAgent(Agent):
 		action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
 		choice = random.choice(action)
 		self.previous_action = []
-		self.didCollide = 0
 		for a in action:
 			if a == choice:
 				self.previous_action.append(1)
