@@ -119,6 +119,9 @@ class GameInstance:
 			else:
 				obs.append(0)
 		obs = obs + previous_action
-		obs = obs + self.did_collide
+		if self.did_collide:
+			obs.append(1)
+		else:
+			obs.append(0)
 		return obs
 
