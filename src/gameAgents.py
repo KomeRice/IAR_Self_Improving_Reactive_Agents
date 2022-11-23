@@ -93,13 +93,14 @@ class MainAgent(Agent):
 			'minDist': 1
 		}]
 
-	def doFoodSensor(self):
+	def doFoodSensor(self, orientation = 0):
 		obsList = []
 		for sensor in self.foodSensor:
 			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+				effective_x, effective_y = self.orientation(x, y, orientation)
 				try:
-					if self.gameInst.isAgentAt(x, y):
-						agent = self.gameInst.getAgentAt(x, y)
+					if self.gameInst.isAgentAt(effective_x, effective_y):
+						agent = self.gameInst.getAgentAt(effective_x, effective_y)
 						if isinstance(agent, FoodAgent):
 							obsList.append(1)
 							continue
@@ -110,13 +111,14 @@ class MainAgent(Agent):
 				obsList.append(0)
 		return np.array(obsList)
 
-	def doEnemySensor(self):
+	def doEnemySensor(self, orientation = 0):
 		obsList = []
 		for sensor in self.enemySensor:
 			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+				effective_x, effective_y = self.orientation(x, y, orientation)
 				try:
-					if self.gameInst.isAgentAt(x, y):
-						agent = self.gameInst.getAgentAt(x, y)
+					if self.gameInst.isAgentAt(effective_x, effective_y):
+						agent = self.gameInst.getAgentAt(effective_x, effective_y)
 						if isinstance(agent, EnemyAgent):
 							obsList.append(1)
 							continue
@@ -127,12 +129,13 @@ class MainAgent(Agent):
 				obsList.append(0)
 		return np.array(obsList)
 
-	def doObstacleSensor(self):
+	def doObstacleSensor(self, orientation = 0):
 		obsList = []
 		for sensor in self.obstacleSensor:
 			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+				effective_x, effective_y = self.orientation(x, y, orientation)
 				try:
-					if self.gameInst.at(x, y) == 'O':
+					if self.gameInst.at(effective_x, effective_y) == 'O':
 						obsList.append(1)
 						continue
 				except IndexError:
@@ -141,6 +144,31 @@ class MainAgent(Agent):
 
 				obsList.append(0)
 		return np.array(obsList)
+
+	@staticmethod
+	def orientation(x, y, orientation):
+		if orientation == 0:
+			return x, y
+		elif orientation == 1:
+			return y, -x
+		elif orientation == 2:
+			return -x, -y
+		elif orientation == 3:
+			return -y, x
+		else:
+			raise ValueError
+
+	def doAllSensors(self, orientation = 0):
+		""" Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
+		and self.obstacleSensor; according to a given orientation.
+
+		:param orientation: (0 - Facing up),
+		(1 - Facing right),
+		(2 - Facing down),
+		(3 - Facing left)
+		:return: A tuple (food, enemy, obstacle) of bit-encoded np.array objects corresponding to each sensor output
+		"""
+		return self.doFoodSensor(orientation), self.doEnemySensor(orientation), self.doObstacleSensor(orientation)
 
 	def step(self):
 		action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
