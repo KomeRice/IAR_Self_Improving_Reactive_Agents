@@ -8,6 +8,7 @@ class GameInstance:
 		self.cols = cols
 		self.grid = [[' ' for _ in range(cols)] for _ in range(rows)]
 		self.remainingFood = initialFood
+		self.initialFood = initialFood
 		self.agents = {}
 		self.mainAgent = None
 
@@ -28,7 +29,8 @@ class GameInstance:
 		self.grid[y][x] = newFood.id
 
 	def movePossible(self, agent, deltaX, deltaY):
-		return 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(agent.x + deltaX, agent.y + deltaY) != 'O'
+		self.did_collide = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(agent.x + deltaX, agent.y + deltaY) != 'O'
+		return self.did_collide
 
 	def at(self, x, y):
 		return self.grid[y][x]
@@ -41,7 +43,7 @@ class GameInstance:
 
 	def doMove(self, agent, deltaX, deltaY):
 		if not self.movePossible(agent, deltaX, deltaY):
-			raise InvalidMoveError(agent.id, agent.x, agent.y, (deltaX, deltaY))
+			return False,0
 		newX = agent.x + deltaX
 		newY = agent.y + deltaY
 
@@ -96,5 +98,23 @@ class GameInstance:
 		return obs,reward,done
 
 	def observation(self):
+		food = self.mainAgent.doFoodSensor()
+		ennemy = self.mainAgent.doEnemySensor()
+		obstacle = self.mainAgent.doObstacleSensor()
+		energy = self.mainAgent.energy
+		max_energy = self.mainAgent.max_energy
+		previous_action = self.mainAgent.previous_action
+
+		obs = [*ennemy,*food,*obstacle]
+		for i in range(16):
+			if i<=round(16/max_energy*energy):
+				obs.append(1)
+			else:
+				obs.append(0)
+		obs = obs + previous_action
+		if self.did_collide:
+			obs.append(1)
+		else:
+			obs.append(0)
 		return obs
 

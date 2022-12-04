@@ -20,6 +20,13 @@ class NN(nn.Module):
         if dropout > 0:
             self.dropout = torch.nn.Dropout(dropout)
 
+        self.model = nn.Sequential(
+            nn.Linear(inSize,30),
+            nn.Sigmoid()*2-1,
+            nn.Linear(30,outSize),
+            nn.Sigmoid()*2-1
+        )
+
     def setcuda(self, device):
         self.cuda(device=device)
 
@@ -41,6 +48,11 @@ class NN(nn.Module):
 
     def load_model(self,filename):
         return torch.load(filename)
+    
+    def loss(self,previous_action,u,Ui):
+        """previous action example = [0,0,1,0] (go to east)"""
+        return previous_action*(u-Ui)
+        
 
 
 Transition = namedtuple('Transition',
