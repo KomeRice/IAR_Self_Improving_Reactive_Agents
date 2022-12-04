@@ -10,13 +10,15 @@ from utils import NN
 import torch
 
 #use gpu if not then cpu
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
+if torch.cuda.is_available():
+    torch.cuda.set_device(0)
+    Device = torch.device('cuda')
+else:
+    Device = torch.device('cpu')
 
 class QconAgent(NN):
     def __init__(self, nbStep = 10000,batch_size=32):
-        self.inNN = NN(145,1,activation=torch.nn.ReLU()).to(device)
-        self.targetNN = NN(145,1,activation=torch.nn.ReLU()).to(device)
+        self.util_net = NN(145,1,activation=torch.nn.ReLU()).to(device)
         self.targetNN.load_state_dict(self.net.state_dict())
         self.epsilon = 1
         self.discount_factor = 0.9
@@ -29,6 +31,8 @@ class QconAgent(NN):
 
     def train(self):
         self.optimizer.zero_grad()
+
+        ob, action, reward, new_ob, done = env.step()
         ob_v=torch.tensor(np.array(ob).reshape(-1,145),dtype=torch.float32,device=Device)
         action_v=torch.tensor(np.array(action).reshape(-1),dtype=torch.float32,device=Device)
         new_ob_v=torch.tensor(np.array(new_ob).reshape(-1,145),dtype=torch.float32,device=Device)
@@ -43,11 +47,10 @@ class QconAgent(NN):
         for a in range(4):
             Q[:,a]=self.net(ob_v).view(-1)
             ob_v=ob_v[[[i]*145 for i in range(self.batch_size)],[self.rotation for _ in range(self.batch_size)]]
-        loss=torch.nn.MSELoss()(y.detach(),Q[range(self.batch_size),np.array(action_v.detach().cpu().numpy())])
+        loss= #todo
         loss.backward()
         self.optimizer.step()
-        if self.nb_iter%self.C==0:
-            self.target_net.load_state_dict(self.net.state_dict())  
+
 
     def predict(self,obs):
         action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
@@ -60,6 +63,8 @@ class QconAgent(NN):
             Q = np.zeros(4)
             for a in range(4):
                 Q[a]=self.net(torch.tensor([obs],dtype=torch.float32)).detach().cpu().numpy()[0]
+                obs = self.doAllSensor(a) #TODO change this after
+            return np.argmax(Q)
 
 
                 
