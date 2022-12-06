@@ -144,81 +144,6 @@ class MainAgent(Agent):
 				obsList.append(0)
 		return obsList
 
-		sensorY = {
-			'radius': 10,
-			'resolution': 2,
-			'minDist': 10
-		}
-		sensorO = {
-			'radius': 6,
-			'resolution': 2,
-			'minDist': 3
-		}
-		sensorX = {
-			'radius': 2,
-			'resolution': 1,
-			'minDist': 1
-		}
-
-		self.foodSensor = [sensorX, sensorO, sensorY]
-		self.enemySensor = [sensorX, sensorO]
-		self.obstacleSensor = [{
-			'radius': 4,
-			'resolution': 1,
-			'minDist': 1
-		}]
-
-	def doFoodSensor(self, orientation = 0):
-		obsList = []
-		for sensor in self.foodSensor:
-			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-				effective_x, effective_y = self.orientation(x, y, orientation)
-				try:
-					if self.gameInst.isAgentAt(effective_x, effective_y):
-						agent = self.gameInst.getAgentAt(effective_x, effective_y)
-						if isinstance(agent, FoodAgent):
-							obsList.append(1)
-							continue
-				except IndexError:
-					obsList.append(0)
-					continue
-
-				obsList.append(0)
-		return np.array(obsList)
-
-	def doEnemySensor(self, orientation = 0):
-		obsList = []
-		for sensor in self.enemySensor:
-			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-				effective_x, effective_y = self.orientation(x, y, orientation)
-				try:
-					if self.gameInst.isAgentAt(effective_x, effective_y):
-						agent = self.gameInst.getAgentAt(effective_x, effective_y)
-						if isinstance(agent, EnemyAgent):
-							obsList.append(1)
-							continue
-				except IndexError:
-					obsList.append(0)
-					continue
-
-				obsList.append(0)
-		return np.array(obsList)
-
-	def doObstacleSensor(self, orientation = 0):
-		obsList = []
-		for sensor in self.obstacleSensor:
-			for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-				effective_x, effective_y = self.orientation(x, y, orientation)
-				try:
-					if self.gameInst.at(effective_x, effective_y) == 'O':
-						obsList.append(1)
-						continue
-				except IndexError:
-					obsList.append(0)
-					continue
-
-				obsList.append(0)
-		return np.array(obsList)
 
 	@staticmethod
 	def orientation(x, y, orientation):
@@ -245,17 +170,17 @@ class MainAgent(Agent):
 		"""
 		return self.doFoodSensor(orientation), self.doEnemySensor(orientation), self.doObstacleSensor(orientation)
 
-	def step(self):
-		action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
-		choice = random.choice(action)
+	def step(self,ac):
+		"""ac to be in form [0,0,0,1] corresponding to the taken action"""
+		action = [self.moveUp,self.moveRight, self.moveDown, self.moveLeft]
 		self.previous_action = []
-		for a in action:
-			if a == choice:
+		for a in range(action):
+			if a == np.argmax(ac):
 				self.previous_action.append(1)
 			else:
 				self.previous_action.append(0)
-		choice()
-		return
+		
+		return action[np.argmax[ac]]() #return the ifdone and the reward of the action taken
 
 class EnemyAgent(Agent):
 	def __init__(self, gameInst, x = 0, y = 0, symbol='E', moveChance = 0.8):
@@ -266,7 +191,7 @@ class EnemyAgent(Agent):
 		if random.random() > self.moveChance:
 			return
 		old_pos = [self.x,self.y]
-		actions = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
+		actions = [self.moveUp,self.moveRight, self.moveDown, self.moveLeft]
 		act = [[self.x,self.y-1],[self.x,self.y+1],[self.x-1,self.y],[self.x+1,self.y]]
 		prob = []
 		for k in act:

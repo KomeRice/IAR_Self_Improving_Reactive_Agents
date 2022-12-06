@@ -88,8 +88,8 @@ class GameInstance:
 	def printGameState(self):
 		print(self.getGameStateString())
 
-	def step(self):
-		done,reward = self.mainAgent.step()
+	def step(self,action):
+		done,reward = self.mainAgent.step(action)
 		for k in self.agents:
 			if isinstance(self.agents[k], ag.MainAgent):
 				continue
