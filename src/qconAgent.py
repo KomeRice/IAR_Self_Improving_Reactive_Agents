@@ -47,7 +47,7 @@ class QconAgent(NN):
         for a in range(4):
             Q[:,a]=self.net(ob_v).view(-1)
             ob_v=ob_v[[[i]*145 for i in range(self.batch_size)],[self.rotation for _ in range(self.batch_size)]]
-        loss= #todo
+        loss= torch.nn.L1Loss
         loss.backward()
         self.optimizer.step()
 
