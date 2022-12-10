@@ -5,43 +5,27 @@ import torch.nn.functional as F
 from collections import namedtuple, deque
 import random
 import math
+import copy
 
 class NN(nn.Module):
-    def __init__(self, inSize, outSize, layers=[], finalActivation=None, activation=torch.tanh,dropout=0.0):
+    def __init__(self, inSize, outSize):
         super(NN, self).__init__()
-        self.layers = nn.ModuleList([])
-        for x in layers:
-            self.layers.append(nn.Linear(inSize, x))
-            inSize = x
-        self.layers.append(nn.Linear(inSize, outSize))
-        self.activation = activation
-        self.finalActivation = finalActivation
-        self.dropout = None
-        if dropout > 0:
-            self.dropout = torch.nn.Dropout(dropout)
-
-        self.model = nn.Sequential(
+        self.online = nn.Sequential(
             nn.Linear(inSize,30),
             nn.Sigmoid()*2-1,
             nn.Linear(30,outSize),
             nn.Sigmoid()*2-1
         )
+        self.target = copy.deepcopy(self.online)
 
     def setcuda(self, device):
         self.cuda(device=device)
 
-    def forward(self, x):
-        x = self.layers[0](x)
-        for i in range(1, len(self.layers)):
-            x = self.activation(x)
-            if self.dropout is not None:
-                x=self.dropout(x)
-
-            x = self.layers[i](x)
-
-        if self.finalActivation is not None:
-            x=self.finalActivation(x)
-        return x
+    def forward(self, input, model):
+        if model == "online":
+            return self.online(input)
+        elif model == "target":
+            return self.target(input)
     
     def save_model(self,filename):
         torch.save(self,filename)

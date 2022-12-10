@@ -1,7 +1,7 @@
 import random
 from customExceptions import InvalidMoveError
 import numpy as np
-import math
+
 
 class Agent:
 	newId = 0
@@ -11,6 +11,7 @@ class Agent:
 		self.id = Agent.newId
 		self.symbol = symbol
 		self.gameInst = gameInst
+		self.did_collide = False
 		Agent.newId += 1
 
 	def moveUp(self):
@@ -158,7 +159,7 @@ class MainAgent(Agent):
 		else:
 			raise ValueError
 
-	def doAllSensors(self, orientation = 0):
+	def observation(self, orientation = 0): #TODO why the orientation is not taken in account
 		""" Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
 		and self.obstacleSensor; according to a given orientation.
 
@@ -166,21 +167,42 @@ class MainAgent(Agent):
 		(1 - Facing right),
 		(2 - Facing down),
 		(3 - Facing left)
-		:return: A tuple (food, enemy, obstacle) of bit-encoded np.array objects corresponding to each sensor output
+		:return: A array [food, enemy, obstacle,energy,previous_action,colide] of bit-encoded np.array objects corresponding to each output
 		"""
-		return self.doFoodSensor(orientation), self.doEnemySensor(orientation), self.doObstacleSensor(orientation)
+		food = self.doFoodSensor(orientation)
+		ennemy = self.doEnemySensor(orientation)
+		obstacle = self.doObstacleSensor(orientation)
+		energy = self.energy
+		max_energy = self.max_energy
+		previous_action = self.previous_action
+
+		obs = [*ennemy,*food,*obstacle]
+		for i in range(16):
+			if i==round(16/max_energy*energy):
+				obs.append(1)
+			else:
+				obs.append(0)
+		obs = obs + previous_action
+		if self.did_collide:
+			obs.append(1)
+		else:
+			obs.append(0)
+		return obs
 
 	def step(self,ac):
 		"""ac to be in form [0,0,0,1] corresponding to the taken action"""
 		action = [self.moveUp,self.moveRight, self.moveDown, self.moveLeft]
 		self.previous_action = []
+		chosen = np.argmax(ac)
 		for a in range(action):
-			if a == np.argmax(ac):
+			if a == chosen:
 				self.previous_action.append(1)
 			else:
 				self.previous_action.append(0)
 		
-		return action[np.argmax[ac]]() #return the ifdone and the reward of the action taken
+		obs = self.observation(chosen)
+		done,rwd = action[np.argmax[ac]]()
+		return obs,rwd,done #return the ifdone and the reward of the action taken
 
 class EnemyAgent(Agent):
 	def __init__(self, gameInst, x = 0, y = 0, symbol='E', moveChance = 0.8):

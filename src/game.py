@@ -2,6 +2,7 @@ import gameAgents as ag
 from customExceptions import InvalidMoveError
 import numpy as np
 
+
 class GameInstance:
 	def __init__(self, rows = 25, cols = 25, initialFood = 10):
 		self.rows = rows
@@ -29,7 +30,7 @@ class GameInstance:
 		self.grid[y][x] = newFood.id
 
 	def movePossible(self, agent, deltaX, deltaY):
-		self.did_collide = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(agent.x + deltaX, agent.y + deltaY) != 'O'
+		agent.did_collide = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(agent.x + deltaX, agent.y + deltaY) != 'O'
 		return self.did_collide
 
 	def at(self, x, y):
@@ -89,32 +90,20 @@ class GameInstance:
 		print(self.getGameStateString())
 
 	def step(self,action):
-		done,reward = self.mainAgent.step(action)
+		obs,rwd,done = self.mainAgent.step(action)
 		for k in self.agents:
 			if isinstance(self.agents[k], ag.MainAgent):
 				continue
 			self.agents[k].step()
-		obs = self.observation()
-		return obs,reward,done
+		return obs,rwd,done
 
-	def observation(self):
-		food = self.mainAgent.doFoodSensor()
-		ennemy = self.mainAgent.doEnemySensor()
-		obstacle = self.mainAgent.doObstacleSensor()
-		energy = self.mainAgent.energy
-		max_energy = self.mainAgent.max_energy
-		previous_action = self.mainAgent.previous_action
+	
+	def reset(self):
+		observation=0
+		rwd=0
+		done=0
+		return observation,rwd,done#TODO
 
-		obs = [*ennemy,*food,*obstacle]
-		for i in range(16):
-			if i<=round(16/max_energy*energy):
-				obs.append(1)
-			else:
-				obs.append(0)
-		obs = obs + previous_action
-		if self.did_collide:
-			obs.append(1)
-		else:
-			obs.append(0)
-		return obs
-
+	def getFood(self):
+		return self.initialFood - self.remainingFood
+	
