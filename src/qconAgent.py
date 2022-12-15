@@ -10,8 +10,8 @@ from utils import NN
 import torch
 
 
-class QconAgent(NN):
-    def __init__(self,savedir, nbStep = 10000,batch_size=32):
+class QconAgent():
+    def __init__(self,savedir, nbStep = 10000,batch_size=1):
         self.state_dim = 145
         self.action_dim = 4
         self.save_dir = savedir
@@ -20,21 +20,24 @@ class QconAgent(NN):
         self.net = NN(145,1).float()
         self.net = self.net.to(device=self.device)
 
-        self.epsilon = 1
         self.discount_factor = 0.9
         self.learning_rate = 1e-3
         self.nbStep = nbStep
-        self.currStep = 0
+        self.curr_step = 0
 
         self.saveEvStep = 1000
         self.batch_size = batch_size
         self.memory = deque(maxlen=100000)
+        self.sync_every = 1
+        self.exploration_rate = 1
+        self.learn_every = 1
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=0.00025)
         self.loss_fn = torch.nn.SmoothL1Loss()
 
     def act(self,state):
         if np.random.rand() < self.exploration_rate:
+            self.exploration_rate = max(0.1, self.exploration_rate * self.discount_factor)
             action_idx = np.random.randint(self.action_dim)
         else:
             state = state[0].__array__() if isinstance(state, tuple) else state.__array__()
@@ -80,10 +83,8 @@ class QconAgent(NN):
         reward (float),
         done(bool))
         """
-        def first_if_tuple(x):
-            return x[0] if isinstance(x, tuple) else x
-        state = first_if_tuple(state).__array__()
-        next_state = first_if_tuple(next_state).__array__()
+        state = state
+        next_state = next_state
 
         state = torch.tensor(state, device=self.device)
         next_state = torch.tensor(next_state, device=self.device)

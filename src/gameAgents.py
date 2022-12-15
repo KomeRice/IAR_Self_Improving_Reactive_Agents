@@ -16,25 +16,25 @@ class Agent:
 
 	def moveUp(self):
 		try:
-			self.gameInst.doMove(self, 0, -1)
+			return self.gameInst.doMove(self, 0, -1)
 		except InvalidMoveError:
 			print(InvalidMoveError)
 
 	def moveDown(self):
 		try:
-			self.gameInst.doMove(self, 0, 1)
+			return self.gameInst.doMove(self, 0, 1)
 		except InvalidMoveError:
 			print(InvalidMoveError)
 
 	def moveLeft(self):
 		try:
-			self.gameInst.doMove(self, -1, 0)
+			return self.gameInst.doMove(self, -1, 0)
 		except InvalidMoveError:
 			print(InvalidMoveError)
 
 	def moveRight(self):
 		try:
-			self.gameInst.doMove(self, 1, 0)
+			return self.gameInst.doMove(self, 1, 0)
 		except InvalidMoveError:
 			print(InvalidMoveError)
 
@@ -168,9 +168,9 @@ class MainAgent(Agent):
 		(3 - Facing left)
 		:return: A array [food, enemy, obstacle,energy,previous_action,colide] of bit-encoded np.array objects corresponding to each output
 		"""
-		food = self.doFoodSensor(orientation)
-		ennemy = self.doEnemySensor(orientation)
-		obstacle = self.doObstacleSensor(orientation)
+		food = self.doFoodSensor()
+		ennemy = self.doEnemySensor()
+		obstacle = self.doObstacleSensor()
 		energy = self.energy
 		max_energy = self.max_energy
 		previous_action = self.previous_action
@@ -188,17 +188,18 @@ class MainAgent(Agent):
 			obs.append(0)
 		return obs
 
-	def step(self,ac):
-		"""ac to be in form [0,0,0,1] corresponding to the taken action"""
-		action = [self.moveUp,self.moveRight, self.moveDown, self.moveLeft]
+	def step(self, ac):
+		"""ac between 0 and 3 corresponding to the action taken"""
+		action = [self.moveUp, self.moveRight, self.moveDown, self.moveLeft]
 		self.previous_action = []
-		for a in range(action):
+		for a in range(len(action)):
 			if a == ac:
 				self.previous_action.append(1)
 			else:
 				self.previous_action.append(0)
 		
 		obs = self.observation(ac)
+		test = action[ac]
 		done,rwd = action[ac]()
 		return obs,rwd,done #return the ifdone and the reward of the action taken
 
@@ -218,7 +219,7 @@ class EnemyAgent(Agent):
 			prob.append(math.exp(0.33*self.w_angle(k)*self.T_dist()))
 		random.choices(actions,weights=prob)[0]()
 		if [self.x,self.y] == old_pos:# on fait quoi si il reste sur place?
-			print("Dead")
+			return
 		
 
 	

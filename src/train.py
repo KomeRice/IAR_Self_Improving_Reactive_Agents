@@ -10,6 +10,7 @@ import time
 
 
 def main(args):
+    filePath = 'grids/default.txt'
     if len(args) < 2:
         filePath = 'grids/default.txt'
         print('No file path given, using grids/default.txt...')
@@ -18,55 +19,57 @@ def main(args):
             return
     elif len(args) > 2:
         print(f'usage: python main.py <Path To Grid file> or python main.py to use default')
-        return 
+        return
+    savedir = "/save/"
 
-    filePath = args[1]
     game = GridReader.readGrid(filePath)
 
     def render():
-        #game.printGameState()   
+        # game.printGameState()
         plot = game.affPlot()
         plot_examples(plot)
         time.sleep(1)
 
     render()
-    #For testing
-    env = GameInstance(initialFood=15)
-
+    # For testing
+    env = game
+    agent = QconAgent(savedir)
+    simulation(env, agent)
+    """
     while True:
         action = env.sample()
         obs, reward, done = env.step(action)
         render()
+        if done:
+            break
+    """
 
+def training(env, filename, nb_play=300, nb_run=20, nb_test=50, freqSave=30):
+    agent = QconAgent()
 
-if __name__ == '__main__':
-	main(sys.argv)
+    csvFile = open(f'{filename}.csv', 'w')
+    csvFile.write('n,mean_rewards,mean_food_eaten\n')
 
-def training(env,filename,nb_play=300,nb_run=20,nb_test=50,freqSave =30):
-	agent = QconAgent()
+    for i in tqdm(range(nb_play)):
 
-	csvFile = open(f'{filename}.csv', 'w')
-	csvFile.write('n,mean_rewards,mean_food_eaten\n')
+        for _ in range(nb_run):
+            rsum, foodEaten = simulation(env, agent, test=False)
 
-	for i in tqdm(range(nb_play)):
+        meanRsum, meanFoodEaten = 0, 0
+        for _ in range(nb_test):
+            rsum, foodEaten = simulation(env, agent, test=True)
+            meanRsum += rsum
+            meanFoodEaten += foodEaten
 
-		for _ in range(nb_run):
-			rsum, foodEaten = simulation(env, agent, test=False)
+        meanRsum /= nb_test
+        meanFoodEaten /= nb_test
 
-		meanRsum, meanFoodEaten = 0, 0
-		for _ in range(nb_test):
-			rsum, foodEaten = simulation(env, agent, test=True)
-			meanRsum += rsum
-			meanFoodEaten += foodEaten
+        csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
 
-		meanRsum /= nb_test
-		meanFoodEaten /= nb_test
+        if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
+            agent.save(f'QAgent/save_{i + 1}_{filename}')
+    csvFile.close()
 
-		csvFile.write(f'{i+1},{meanRsum},{meanFoodEaten}\n')
-
-		if (i+1) % freqSave == 0 or (i+1) == nb_play:
-			agent.save(f'QAgent/save_{i+1}_{filename}')
-	csvFile.close()
 
 def simulation(env, agent, test=False):
     agent.test = test
@@ -75,7 +78,7 @@ def simulation(env, agent, test=False):
 
     while True:
         action = agent.act(ob)
-        new_ob, reward, done= env.step(action)
+        new_ob, reward, done = env.step(action)
         agent.store(ob, new_ob, action, reward, done)
         q, loss = agent.learn()
         ob = new_ob
@@ -84,3 +87,6 @@ def simulation(env, agent, test=False):
             break
 
     return rsum, env.getFood()
+
+if __name__ == '__main__':
+    main(sys.argv)

@@ -33,7 +33,7 @@ class GameInstance:
 
 	def movePossible(self, agent, deltaX, deltaY):
 		agent.did_collide = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(agent.x + deltaX, agent.y + deltaY) != 'O'
-		return self.did_collide
+		return agent.did_collide
 
 	def at(self, x, y):
 		return self.grid[y][x]
@@ -49,11 +49,10 @@ class GameInstance:
 			return False,0
 		newX = agent.x + deltaX
 		newY = agent.y + deltaY
-
+		reward = 0
 		# Main Agent special behaviors
 		if isinstance(agent, ag.MainAgent):
 			# Check for food
-			reward = 0
 			if self.isAgentAt(newX, newY):
 				agentAtLoc = self.getAgentAt(newX, newY)
 				if agentAtLoc.symbol == '$':
@@ -105,8 +104,6 @@ class GameInstance:
 		return intList
 
 	def step(self,action):
-		print(action)
-		print(self.mainAgent)
 		obs,rwd,done = self.mainAgent.step(action)
 		for k in self.agents:
 			if isinstance(self.agents[k], ag.MainAgent):
@@ -119,7 +116,7 @@ class GameInstance:
 		return np.random.choice(self.action_space)
 
 	def reset(self):
-		observation = None
+		observation = self.mainAgent.observation()
 		return observation#TODO
 
 	def getFood(self):
