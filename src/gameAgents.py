@@ -1,7 +1,7 @@
 import random
 from customExceptions import InvalidMoveError
 import numpy as np
-
+import math
 
 class Agent:
 	newId = 0
@@ -145,7 +145,6 @@ class MainAgent(Agent):
 				obsList.append(0)
 		return obsList
 
-
 	@staticmethod
 	def orientation(x, y, orientation):
 		if orientation == 0:
@@ -193,15 +192,14 @@ class MainAgent(Agent):
 		"""ac to be in form [0,0,0,1] corresponding to the taken action"""
 		action = [self.moveUp,self.moveRight, self.moveDown, self.moveLeft]
 		self.previous_action = []
-		chosen = np.argmax(ac)
 		for a in range(action):
-			if a == chosen:
+			if a == ac:
 				self.previous_action.append(1)
 			else:
 				self.previous_action.append(0)
 		
-		obs = self.observation(chosen)
-		done,rwd = action[np.argmax[ac]]()
+		obs = self.observation(ac)
+		done,rwd = action[ac]()
 		return obs,rwd,done #return the ifdone and the reward of the action taken
 
 class EnemyAgent(Agent):

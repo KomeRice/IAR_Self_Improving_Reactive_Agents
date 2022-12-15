@@ -12,6 +12,8 @@ class GameInstance:
 		self.initialFood = initialFood
 		self.agents = {}
 		self.mainAgent = None
+		self.state_space = 145
+		self.action_space = 4
 
 	def addMainAgent(self, x, y):
 		newMain = ag.MainAgent(self, x, y)
@@ -89,7 +91,22 @@ class GameInstance:
 	def printGameState(self):
 		print(self.getGameStateString())
 
+	def affPlot(self):
+		convertDict = {' ':0, 'O':1, 'E':2, 'I':3 , '$':4}
+		stringList = self.getGameStateString().split('\n')
+		intList = []
+		for w in stringList:
+			line = []
+			for l in w:
+				if l in convertDict:
+					line.append(convertDict[l])
+			if line:
+				intList.append(line)
+		return intList
+
 	def step(self,action):
+		print(action)
+		print(self.mainAgent)
 		obs,rwd,done = self.mainAgent.step(action)
 		for k in self.agents:
 			if isinstance(self.agents[k], ag.MainAgent):
@@ -98,11 +115,12 @@ class GameInstance:
 		return obs,rwd,done
 
 	
+	def sample(self):
+		return np.random.choice(self.action_space)
+
 	def reset(self):
-		observation=0
-		rwd=0
-		done=0
-		return observation,rwd,done#TODO
+		observation = None
+		return observation#TODO
 
 	def getFood(self):
 		return self.initialFood - self.remainingFood

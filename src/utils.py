@@ -3,9 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import namedtuple, deque
-import random
-import math
+
+import matplotlib.pyplot as plt
 import copy
+from matplotlib.colors import ListedColormap
 
 class NN(nn.Module):
     def __init__(self, inSize, outSize):
@@ -37,28 +38,7 @@ class NN(nn.Module):
         """previous action example = [0,0,1,0] (go to east)"""
         return previous_action*(u-Ui)
         
-
-
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
-
-class ReplayMemory(object):
-
-    def __init__(self, capacity):
-        self.memory = deque([],maxlen=capacity)
-
-    def push(self, *args):
-        """Save a transition"""
-        self.memory.append(Transition(*args))
-
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
-
-    def __len__(self):
-        return len(self.memory)
-
-    def chooseToSave(self,m):#appendix b
-        w = min(3,1+0.02*m)
-        r = random.random()
-        return int(m*math.log(1+r*(math.e**w-1))/w)
-
+def plot_examples(data):
+    cmap = ListedColormap(["white", "black", "red", "blue", "green"])
+    plt.imshow(np.array(data),cmap=cmap)
+    plt.show()

@@ -33,45 +33,7 @@ class QconAgent(NN):
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=0.00025)
         self.loss_fn = torch.nn.SmoothL1Loss()
 
-
-    def train(self,batch):
-        self.optimizer.zero_grad()
-        batch_size = len(batch)
-        ob, action, reward, new_ob, done = map(list,zip(*batch))
-        ob_v=torch.tensor(np.array(ob).reshape(-1,145),dtype=torch.float32,device=Device)
-        action_v=torch.tensor(np.array(action).reshape(-1),dtype=torch.float32,device=Device)
-        new_ob_v=torch.tensor(np.array(new_ob).reshape(-1,145),dtype=torch.float32,device=Device)
-        reward_v=torch.tensor(np.array(reward).reshape(-1),dtype=torch.float32,device=Device)
-        done_v=torch.tensor(np.array(done).reshape(-1),dtype=torch.float32,device=Device)
-        Q_next=torch.zeros((self.batch_size,4)).to(Device)
-        for a in range(4):
-            Q_next[:,a]=self.target_net(new_ob_v).view(-1)
-            new_ob_v=new_ob_v[[[i]*145 for i in range(self.batch_size)],[self.rotation for _ in range(self.batch_size)]]
-        y=reward_v+(1-done_v)*self.gamma*torch.max(Q_next,dim=1)[0]
-        Q=torch.zeros((self.batch_size,4)).to(Device)
-        for a in range(4):
-            Q[:,a]=self.net(ob_v).view(-1)
-            ob_v=ob_v[[[i]*145 for i in range(self.batch_size)],[self.rotation for _ in range(self.batch_size)]]
-        loss=torch.nn.L1Loss()(y.detach(),Q[range(batch_size),np.array(action_v.detach().cpu().numpy())])
-        loss.backward()
-        self.optimizer.step()
-
-    def predict(self,obs):
-        action = [self.moveUp, self.moveDown, self.moveLeft, self.moveRight]
-        obs = np.array(obs)
-        self.epsilon = max(0.1,self.epsilon-1/150000)
-        self.nb_iter +=1
-        if random.random()<self.epsilon:
-            return random.choice(action)
-        else:
-            Q = np.zeros(4)
-            for a in range(4):
-                Q[a]=self.net(torch.tensor([obs],dtype=torch.float32)).detach().cpu().numpy()[0]
-                obs = self.doAllSensor(a) #TODO change this after
-            return np.argmax(Q)
-
     def act(self,state):
-    
         if np.random.rand() < self.exploration_rate:
             action_idx = np.random.randint(self.action_dim)
         else:
@@ -107,7 +69,7 @@ class QconAgent(NN):
     def sync_Q_target(self):
         self.net.target.load_state_dict(self.net.online.state_dict())
 
-    def cache(self, state, next_state, action, reward, done):
+    def store(self, state, next_state, action, reward, done):
         """
         Store the experience to self.memory (replay buffer)
 
