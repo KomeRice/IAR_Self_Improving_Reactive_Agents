@@ -30,7 +30,7 @@ def main(args):
         plot_examples(plot)
         time.sleep(1)
 
-    render()
+    #render()
     # For testing
     env = game
     agent = QconAgent(savedir)

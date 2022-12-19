@@ -10,8 +10,9 @@ from utils import NN
 import torch
 
 
-class QconAgent():
-    def __init__(self,savedir, nbStep = 10000,batch_size=1):
+class QconAgent:
+    def __init__(self,savedir, nbStep = 10000,batch_size=1,test = False):
+        self.test = test
         self.state_dim = 145
         self.action_dim = 4
         self.save_dir = savedir
@@ -20,7 +21,8 @@ class QconAgent():
         self.net = NN(145,1).float()
         self.net = self.net.to(device=self.device)
 
-        self.discount_factor = 0.9
+        self.gamma = 0.9
+        self.Temperature = 0.05
         self.learning_rate = 1e-3
         self.nbStep = nbStep
         self.curr_step = 0
@@ -37,7 +39,7 @@ class QconAgent():
 
     def act(self,state):
         if np.random.rand() < self.exploration_rate:
-            self.exploration_rate = max(0.1, self.exploration_rate * self.discount_factor)
+            self.exploration_rate = max(0.1, self.exploration_rate - self.Temperature)
             action_idx = np.random.randint(self.action_dim)
         else:
             state = state[0].__array__() if isinstance(state, tuple) else state.__array__()
@@ -48,19 +50,21 @@ class QconAgent():
         return action_idx
 
     def td_estimate(self, state, action):
-        current_Q = self.net(state, model="online")[
-            np.arange(0, self.batch_size), action
-        ]  # Q_online(s,a)
-        return current_Q
+        Q = torch.zeros((self.batch_size, 4)).to(self.device)
+        for a in range(4):
+            Q[:, a] = self.net(state,model="online").view(-1)
+            # TODO tourner la carte et prendre le nouvel state dans le net 
+            state = state[[[i] * 145 for i in range(self.batch_size)], [self.rotation for _ in range(self.batch_size)]]
+        return Q
 
     @torch.no_grad()
     def td_target(self, reward, next_state, done):
-        next_state_Q = self.net(next_state, model="online")
-        best_action = torch.argmax(next_state_Q, axis=1)
-        next_Q = self.net(next_state, model="target")[
-            np.arange(0, self.batch_size), best_action
-        ]
-        return (reward + (1 - done.float()) * self.gamma * next_Q).float()
+        next_Q = torch.zeros((self.batch_size, 4)).to(self.device)
+        for a in range(4):
+            next_Q[:, a] = self.net(next_state, model="target").view(-1)
+            # TODO tourner la carte et prendre le nouvel state dans le net
+            next_state = next_state[[[i] * 145 for i in range(self.batch_size)], [self.rotation for _ in range(batch_size)]]
+        return reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
 
     def update_Q_online(self, td_estimate, td_target):
         loss = self.loss_fn(td_estimate, td_target)
@@ -103,6 +107,7 @@ class QconAgent():
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
     
     def learn(self):
+
         if self.curr_step % self.sync_every == 0:
             self.sync_Q_target()
 
@@ -121,4 +126,10 @@ class QconAgent():
         # Backpropagate loss through Q_online
         loss = self.update_Q_online(td_est, td_tgt)
 
-        return (td_est.mean().item(), loss)
+        return td_est.mean().item(), loss
+
+    def save(self,outputDir):
+        torch.save(self.net.state_dict(), outputDir)
+
+    def load(self,inputDir):
+        self.net.load_state_dict(torch.load(inputDir, map_location=self.device))

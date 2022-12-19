@@ -26,6 +26,7 @@ class NN(nn.Module):
         self.cuda(device=device)
 
     def forward(self, input, model):
+        input = input.float()
         if model == "online":
             return self.online(input)
         elif model == "target":
@@ -53,8 +54,9 @@ def plot_examples(data):
 class Activation_Sigmoid(nn.Module):
     def __init__(self):
         super(Activation_Sigmoid,self).__init__()
+
+    @torch.no_grad()
     def forward(self, inputs):
         # Save input and calculate/save output
         # of the sigmoid function
-        self.inputs = inputs
-        self.output = 2 / (1 + np.exp(- inputs)) -1
+        return 2 * (torch.sigmoid(inputs)-0.5)
