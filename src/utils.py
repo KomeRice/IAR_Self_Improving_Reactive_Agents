@@ -20,8 +20,6 @@ class NN(nn.Module):
         )
         self.target = copy.deepcopy(self.online)
 
-
-
     def setcuda(self, device):
         self.cuda(device=device)
 
