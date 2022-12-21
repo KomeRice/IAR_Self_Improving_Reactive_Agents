@@ -1,18 +1,12 @@
-import math
 import random
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from collections import namedtuple, deque
-from itertools import count
-
+from collections import deque
 from utils import NN
 import torch
 
 
 class QconAgent:
-    def __init__(self, savedir, nbStep=10000, batch_size=1, test=False):
-        # TODO add the testing case or training case
+    def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=1, test=False):
         self.test = test
         # input dim and action dim
         self.state_dim = 145
@@ -33,44 +27,47 @@ class QconAgent:
         # max step
         self.nbStep = nbStep
         self.curr_step = 0
-        self.saveEvStep = 1000
 
         self.batch_size = batch_size
-        self.memory = deque(maxlen=100000)
+        self.memory = deque(maxlen=memory_size)
         self.sync_every = 1
         self.learn_every = 1
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.learning_rate)
         self.loss_fn = torch.nn.SmoothL1Loss()
 
-    def act(self, state, test=False):
+        self.env = env
+
+    def act(self, state):
         """Predict and return the best action given the state
         :param state: list[int] observation of the state
         :param test: bool check if training or testing mode
         :return: action_idx : int the index of the best action given the state
         """
-        if np.random.rand() < self.exploration_rate:
+        if not self.test and np.random.rand() < self.exploration_rate:
             self.exploration_rate = max(0.1, self.exploration_rate - self.Temperature)
             action_idx = np.random.randint(self.action_dim)
         else:
-            state = state[0].__array__() if isinstance(state, tuple) else state.__array__()
-            state = torch.tensor(state, device=self.device).unsqueeze(0)
-            action_values = self.net(state, model="online")
-            action_idx = torch.argmax(action_values, axis=1).item()
+            Q = np.zeros(4)
+            for a in range(4):
+                Q[a] = self.net(torch.tensor([state], dtype=torch.float32, device=self.device)).detach().cpu().numpy()[0]
+                state = self.env.mainAgent.observation(a)
+            action_idx = np.argmax(Q)
         self.curr_step += 1
         return action_idx
 
-    def td_estimate(self, state):
+    def td_estimate(self, state, action):
         """ Compute the Q values of the given state
+        :param action: action taken
         :param state: current state
         :return: Q values
         """
         Q = torch.zeros((self.batch_size, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
+            state = torch.FloatTensor(state)
             Q[:, a] = self.net(state, model="online").view(-1)
-            # TODO tourner la carte et prendre le nouvel state dans le net
-            state = state[[[i] * 145 for i in range(self.batch_size)], [self.rotation for _ in range(self.batch_size)]]
-        return Q
+            state = self.env.mainAgent.observation(a)
+        return Q[:, int(action.item())]
 
     @torch.no_grad()
     def td_target(self, reward, next_state, done):
@@ -82,10 +79,9 @@ class QconAgent:
         """
         next_Q = torch.zeros((self.batch_size, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
+            next_state = torch.FloatTensor(next_state)
             next_Q[:, a] = self.net(next_state, model="target").view(-1)
-            # TODO tourner la carte et prendre le nouvel state dans le net
-            next_state = next_state[
-                [[i] * 145 for i in range(self.batch_size)], [self.rotation for _ in range(self.batch_size)]]
+            next_state = self.env.mainAgent.observation(a)
         return reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
 
     def update_Q_online(self, td_estimate, td_target):
@@ -96,6 +92,7 @@ class QconAgent:
         """
         loss = self.loss_fn(td_estimate, td_target)
         self.optimizer.zero_grad()
+        loss = torch.autograd.Variable(loss, requires_grad=True)
         loss.backward()
         self.optimizer.step()
         return loss.item()
@@ -120,11 +117,11 @@ class QconAgent:
         state = state
         next_state = next_state
 
-        state = torch.tensor(state, device=self.device)
-        next_state = torch.tensor(next_state, device=self.device)
-        action = torch.tensor([action], device=self.device)
-        reward = torch.tensor([reward], device=self.device)
-        done = torch.tensor([done], device=self.device)
+        state = torch.FloatTensor(state, device=self.device)
+        next_state = torch.FloatTensor(next_state, device=self.device)
+        action = torch.FloatTensor([action], device=self.device)
+        reward = torch.FloatTensor([reward], device=self.device)
+        done = torch.FloatTensor([done], device=self.device)
 
         self.memory.append((state, next_state, action, reward, done,))
 
