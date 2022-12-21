@@ -50,7 +50,8 @@ class QconAgent:
         else:
             Q = np.zeros(4)
             for a in range(4):
-                Q[a] = self.net(torch.tensor([state], dtype=torch.float32, device=self.device)).detach().cpu().numpy()[0]
+                state = torch.FloatTensor(state)
+                Q[a] = self.net(state, model="online")
                 state = self.env.mainAgent.observation(a)
             action_idx = np.argmax(Q)
         self.curr_step += 1
