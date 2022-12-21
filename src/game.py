@@ -2,7 +2,6 @@ import gameAgents as ag
 from customExceptions import InvalidMoveError
 import numpy as np
 
-
 class GameInstance:
 	def __init__(self, rows = 25, cols = 25, initialFood = 10):
 		self.rows = rows
@@ -111,7 +110,7 @@ class GameInstance:
 			self.agents[k].step()
 		return obs,rwd,done
 
-	
+
 	def sample(self):
 		return np.random.choice(self.action_space)
 
@@ -121,4 +120,3 @@ class GameInstance:
 
 	def getFood(self):
 		return self.initialFood - self.remainingFood
-	
