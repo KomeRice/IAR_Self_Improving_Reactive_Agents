@@ -183,9 +183,9 @@ class MainAgent(Agent):
 		(3 - Facing left)
 		:return: A array [food, enemy, obstacle,energy,previous_action,colide] of bit-encoded np.array objects corresponding to each output
 		"""
-		food = self.doFoodSensor()
-		ennemy = self.doEnemySensor()
-		obstacle = self.doObstacleSensor()
+
+		food, ennemy, obstacle = self.doAllSensors(orientation)
+
 		energy = self.energy
 		max_energy = self.max_energy
 		previous_action = self.previous_action
