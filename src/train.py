@@ -25,12 +25,12 @@ def main(args):
 
     print("----------------------TRAINING QCON AGENT----------------------")
     agent = QconAgent(savedir)
-    training(envPath, agent, "Output")
+    training(envPath, agent, filename="Output",nb_play=1)
     print("----------------------DONE----------------------")
     
     print("----------------------TRAINING QCONR AGENT----------------------")
     agentR = QconAgent("saveR/", batch_size=32, memory_size=10000) # action replay
-    training(envPath, agentR, "OutputR")
+    training(envPath, agentR, filename="OutputR",nb_play=1)
 
     print("----------------------DONE----------------------")
     # For testing
@@ -68,6 +68,7 @@ def training(envPath,agent, filename, nb_play=300, nb_run=20, nb_test=50, freqSa
         csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
 
         if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
+            #TODO IO maybe change qconagent save to check the file
             agent.save(f'save/QAgent/save_{i + 1}_{filename}')
     csvFile.close()
 
