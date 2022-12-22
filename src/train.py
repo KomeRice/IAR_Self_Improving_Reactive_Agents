@@ -18,19 +18,26 @@ def main(args):
     elif len(args) > 2:
         print(f'usage: python main.py <Path To Grid file> or python main.py to use default')
         return
-    savedir = "save/"
+    startDate = time.time()
+    dirPrefix = f'save_{startDate}/'
+    try:
+        os.mkdir(dirPrefix)
+        os.mkdir(dirPrefix + 'QAgent')
+        os.mkdir(dirPrefix + 'saveR')
+    except FileExistsError:
+        print(f'Unexpected folder already exists: {dirPrefix}')
 
     env = GridReader.readGrid(envPath)
     render(env)
 
     print("----------------------TRAINING QCON AGENT----------------------")
-    agent = QconAgent(savedir)
-    training(envPath, agent, filename="Output",nb_play=1)
+    agent = QconAgent(dirPrefix)
+    training(envPath, agent, dirPrefix, filename="Output",nb_play=1)
     print("----------------------DONE----------------------")
     
     print("----------------------TRAINING QCONR AGENT----------------------")
-    agentR = QconAgent("saveR/", batch_size=32, memory_size=10000) # action replay
-    training(envPath, agentR, filename="OutputR",nb_play=1)
+    agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000) # action replay
+    training(envPath, agentR, dirPrefix, filename="OutputR",nb_play=1)
 
     print("----------------------DONE----------------------")
     # For testing
@@ -47,10 +54,10 @@ def main(args):
     """
 
 
-def training(envPath,agent, filename, nb_play=300, nb_run=20, nb_test=50, freqSave=30, r=False):
-    csvFile = open(f'save/Output.csv', 'w')
+def training(envPath,agent, dirPrefix, filename, nb_play=1, nb_run=20, nb_test=50, freqSave=30, r=False):
+    csvFile = open(f'{dirPrefix}Output.csv', 'w')
     csvFile.write('n,mean_rewards,mean_food_eaten\n')
-
+    
     for i in tqdm(range(nb_play)):
 
         for _ in range(nb_run):
@@ -69,7 +76,7 @@ def training(envPath,agent, filename, nb_play=300, nb_run=20, nb_test=50, freqSa
 
         if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
             #TODO IO maybe change qconagent save to check the file
-            agent.save(f'save/QAgent/save_{i + 1}_{filename}')
+            agent.save(f'{dirPrefix}/QAgent/save_{i + 1}_{filename}')
     csvFile.close()
 
 
