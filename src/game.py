@@ -1,3 +1,4 @@
+import random
 import gameAgents as ag
 from customExceptions import InvalidMoveError
 import numpy as np
@@ -15,6 +16,11 @@ class GameInstance:
         self.state_space = 145
         self.action_space = 4
         self.verbose = False
+        self.initialMainAgentPosition = []
+        self.initialEnemyPositions = []
+        self.initialEmptyTiles = []
+        self.initialWalls = []
+        self.initialFood = 1
 
     def addMainAgent(self, x, y):
         newMain = ag.MainAgent(self, x, y)
@@ -31,6 +37,13 @@ class GameInstance:
         newFood = ag.FoodAgent(self, x, y)
         self.agents[newFood.id] = newFood
         self.grid[y][x] = newFood.id
+
+    def distributeFood(self):
+        emptyTiles = self.initialEmptyTiles.copy()
+        for _ in range(self.initialFood):
+            foodPos = random.choice(emptyTiles)
+            emptyTiles.remove(foodPos)
+            self.addFoodAgent(foodPos[0], foodPos[1])
 
     def movePossible(self, agent, deltaX, deltaY):
         agent.did_collide = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(
@@ -119,6 +132,19 @@ class GameInstance:
 
     def sample(self):
         return np.random.choice(self.action_space)
+
+    def envReset(self):
+        self.grid = [[' ' for _ in range(self.cols)] for _ in range(self.rows)]
+        self.remainingFood = self.initialFood
+        self.agents = {}
+        for x, y in self.initialWalls:
+            self.grid[y][x] = 'O'
+        for x, y in self.initialEnemyPositions:
+            self.addEnemyAgent(x, y)
+        for x, y in self.initialMainAgentPosition:
+            self.addMainAgent(x, y)
+        self.distributeFood()
+
 
     def reset(self):
         observation = self.mainAgent.observation()

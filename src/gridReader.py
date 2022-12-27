@@ -56,23 +56,26 @@ class GridReader:
                 symbol = grid[y][x]
                 if symbol == 'E':
                     g.addEnemyAgent(x, y)
+                    g.initialEnemyPositions.append((x, y))
                 elif symbol == 'I':
                     #if mainAgentAdded:
                         #print(f'Added multiple main agents, is this intended?')
                     g.addMainAgent(x, y)
+                    g.initialMainAgentPosition.append((x, y))
                     mainAgentAdded = True
                 elif symbol == 'O':
                     g.grid[y][x] = 'O'
+                    g.initialWalls.append((x, y))
                 else:
                     emptyTiles.append((x, y))
+
+        g.initialEmptyTiles = emptyTiles
 
         if nbFood > len(emptyTiles):
             raise GridReaderError(2, filePath, 'Not enough empty space for food')
 
-        for _ in range(nbFood):
-            foodPos = random.choice(emptyTiles)
-            emptyTiles.remove(foodPos)
-            g.addFoodAgent(foodPos[0], foodPos[1])
+        g.initialFood = nbFood
+        g.distributeFood()
 
         #print('Done.')
 
