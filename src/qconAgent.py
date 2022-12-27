@@ -63,12 +63,16 @@ class QconAgent:
         :param state: current state
         :return: Q values
         """
-        Q = torch.zeros((self.batch_size, self.action_dim)).to(self.device)
+        to_sample = min(len(self.memory), self.batch_size)
+        Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
             state = torch.FloatTensor(state)
             Q[:, a] = self.net(state, model="online").view(-1)
             state = self.env.mainAgent.observation(a)
-        return Q[:, int(action.item())]
+        test = np.array(action.detach().cpu().numpy())
+        t = Q[range(to_sample), np.array(action.detach().cpu().numpy())]
+        return Q[range(to_sample), np.array(action.detach().cpu().numpy())]
+
 
     @torch.no_grad()
     def td_target(self, reward, next_state, done):
@@ -78,7 +82,8 @@ class QconAgent:
         :param done: done
         :return: y the aggregation of the rewards
         """
-        next_Q = torch.zeros((self.batch_size, self.action_dim)).to(self.device)
+        to_sample = min(len(self.memory), self.batch_size)
+        next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
             next_state = torch.FloatTensor(next_state)
             next_Q[:, a] = self.net(next_state, model="target").view(-1)
@@ -120,7 +125,7 @@ class QconAgent:
 
         state = torch.FloatTensor(state, device=self.device)
         next_state = torch.FloatTensor(next_state, device=self.device)
-        action = torch.FloatTensor([action], device=self.device)
+        action = torch.IntTensor([action], device=self.device)
         reward = torch.FloatTensor([reward], device=self.device)
         done = torch.FloatTensor([done], device=self.device)
 
@@ -130,7 +135,8 @@ class QconAgent:
         """
         Retrieve a batch of experiences from memory
         """
-        batch = random.sample(self.memory, self.batch_size)
+        to_sample = min(len(self.memory),self.batch_size)
+        batch = random.sample(self.memory, to_sample)
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
 
