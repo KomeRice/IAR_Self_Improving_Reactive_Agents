@@ -32,12 +32,12 @@ def main(args):
 
     print("----------------------TRAINING QCON AGENT----------------------")
     agent = QconAgent(dirPrefix)
-    training(envPath, agent, dirPrefix, filename="Output",nb_play=nb_play, animation=True)
+    training(envPath, agent, dirPrefix, filename="Output", nb_play=nb_play, animation=True)
     print("----------------------DONE----------------------")
-    
+
     print("----------------------TRAINING QCONR AGENT----------------------")
-    agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000) # action replay
-    training(envPath, agentR, dirPrefix, filename="OutputR",nb_play=nb_play, animation=True)
+    agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
+    training(envPath, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, animation=True)
 
     print("----------------------DONE----------------------")
     # For testing
@@ -54,21 +54,24 @@ def main(args):
     """
 
 
-def training(envPath,agent, dirPrefix, filename, nb_play=1, nb_run=20, nb_test=50, freqSave=30, r=False, animation=False):
+def training(envPath, agent, dirPrefix, filename, nb_play=1, nb_run=20, nb_test=50, freqSave=30, r=False,
+             animation=False):
     csvFile = open(f'{dirPrefix}{filename}.csv', 'w')
     csvFile.write('n,mean_rewards,mean_food_eaten\n')
-    
+
     for i in tqdm(range(nb_play)):
         for run in range(nb_run):
             if animation:
-                rsum, foodEaten = simulation(envPath, agent, test=False, r=r, save_animation=True, dirPrefix=dirPrefix, run_name=f'{filename}_play{i}_run{run}')
+                rsum, foodEaten = simulation(envPath, agent, test=False, r=r, save_animation=True, dirPrefix=dirPrefix,
+                                             run_name=f'{filename}_play{i}_run{run}')
             else:
                 rsum, foodEaten = simulation(envPath, agent, test=False, r=r)
 
         meanRsum, meanFoodEaten = 0, 0
         for test in range(nb_test):
             if animation:
-                rsum, foodEaten = simulation(envPath, agent, test=False, r=r, save_animation=True, dirPrefix=dirPrefix, run_name=f'{filename}_play{i}_test{test}')
+                rsum, foodEaten = simulation(envPath, agent, test=False, r=r, save_animation=True, dirPrefix=dirPrefix,
+                                             run_name=f'{filename}_play{i}_test{test}')
             else:
                 rsum, foodEaten = simulation(envPath, agent, test=True)
             meanRsum += rsum
@@ -80,7 +83,7 @@ def training(envPath,agent, dirPrefix, filename, nb_play=1, nb_run=20, nb_test=5
         csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
 
         if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
-            #TODO IO maybe change qconagent save to check the file
+            # TODO IO maybe change qconagent save to check the file
             agent.save(f'{dirPrefix}/QAgent/save_{i + 1}_{filename}')
     csvFile.close()
 
@@ -126,15 +129,18 @@ def simulation(envPath, agent, test=False, r=False, save_animation=False, dirPre
 
     return rsum, env.getFoodEaten()
 
+
 def render(game):
     # game.printGameState()
     plot = game.affPlot()
     plot_examples(plot)
     time.sleep(1)
 
+
 def animate(game, filepath):
     plot = game.affPlot()
     save_plot(plot, filepath)
+
 
 if __name__ == '__main__':
     main(sys.argv)

@@ -175,7 +175,7 @@ class MainAgent(Agent):
 		"""
         return self.doFoodSensor(orientation), self.doEnemySensor(orientation), self.doObstacleSensor(orientation)
 
-    def observation(self, orientation=0):  # TODO why the orientation is not taken in account
+    def observ(self, orientation=0):  # TODO why the orientation is not taken in account
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
 		and self.obstacleSensor; according to a given orientation.
 
@@ -205,6 +205,9 @@ class MainAgent(Agent):
             obs.append(0)
         return obs
 
+    def observation(self):
+        return [self.observ(i) for i in range(4)]
+
     def step(self, ac):
         """ac between 0 and 3 corresponding to the action taken"""
         action = [self.moveUp, self.moveRight, self.moveDown, self.moveLeft]
@@ -215,8 +218,7 @@ class MainAgent(Agent):
             else:
                 self.previous_action.append(0)
 
-        obs = self.observation(ac)
-        test = action[ac]
+        obs = self.observation()
         done, rwd = action[ac]()
         return obs, rwd, done  # return the if done and the reward of the action taken
 

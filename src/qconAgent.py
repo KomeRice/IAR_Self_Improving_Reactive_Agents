@@ -49,9 +49,7 @@ class QconAgent:
         else:
             Q = np.zeros(4)
             for a in range(4):
-                state = torch.FloatTensor(state)
-                Q[a] = self.net(state, model="online")
-                state = self.env.mainAgent.observation((a + 1) % 4)
+                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
             action_idx = np.argmax(Q)
         self.curr_step += 1
         return action_idx
@@ -65,9 +63,7 @@ class QconAgent:
         to_sample = min(len(self.memory), self.batch_size)
         Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
-            state = torch.FloatTensor(state)
-            Q[:, a] = self.net(state, model="online").view(-1)
-            state = self.env.mainAgent.observation((a+1) % 4)
+            Q[:, a] = self.net(state[a], model="online").view(-1)
         return Q[range(to_sample), np.array(action.detach().cpu().numpy())]
 
     def td_target(self, reward, next_state, done):
@@ -80,9 +76,7 @@ class QconAgent:
         to_sample = min(len(self.memory), self.batch_size)
         next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
-            next_state = torch.FloatTensor(next_state)
-            next_Q[:, a] = self.net(next_state, model="target").view(-1)
-            next_state = self.env.mainAgent.observation((a + 1) % 4)
+            next_Q[:, a] = self.net(next_state[a], model="target").view(-1)
         return reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
 
     def update_Q_online(self, td_estimate, td_target):
@@ -133,7 +127,7 @@ class QconAgent:
         to_sample = min(len(self.memory), self.batch_size)
         batch = random.sample(self.memory, to_sample)
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
-        return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
+        return state.squeeze(), next_state.squeeze(), action.squeeze(), reward.squeeze(), done.squeeze()
 
     def learn(self):
         """train the network
