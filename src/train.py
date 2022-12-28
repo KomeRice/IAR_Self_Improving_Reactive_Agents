@@ -83,7 +83,6 @@ def training(envPath, agent, dirPrefix, filename, nb_play=1, nb_run=20, nb_test=
         csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
 
         if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
-            # TODO IO maybe change qconagent save to check the file
             agent.save(f'{dirPrefix}/QAgent/save_{i + 1}_{filename}')
     csvFile.close()
 
