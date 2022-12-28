@@ -21,6 +21,7 @@ class GameInstance:
         self.initialEmptyTiles = []
         self.initialWalls = []
         self.initialFood = 1
+        self.foodPositionsToRestore = {}
 
     def addMainAgent(self, x, y):
         newMain = ag.MainAgent(self, x, y)
@@ -90,7 +91,15 @@ class GameInstance:
                     print('Game over: Died to exhaustion')
                 return True, reward
 
-        self.grid[agent.y][agent.x] = ' '
+        if (agent.x, agent.y) in self.foodPositionsToRestore:
+            self.grid[agent.y][agent.x] = self.foodPositionsToRestore[(agent.x, agent.y)].id
+        else:
+            self.grid[agent.y][agent.x] = ' '
+        if isinstance(agent, ag.EnemyAgent) and self.isAgentAt(newX, newY):
+            overwritten = self.getAgentAt(newX, newY)
+            if isinstance(overwritten, ag.FoodAgent):
+                self.foodPositionsToRestore[(newX, newY)] = overwritten
+
         self.grid[newY][newX] = agent.id
         agent.x = newX
         agent.y = newY
@@ -144,7 +153,6 @@ class GameInstance:
         for x, y in self.initialMainAgentPosition:
             self.addMainAgent(x, y)
         self.distributeFood()
-
 
     def reset(self):
         observation = self.mainAgent.observation()
