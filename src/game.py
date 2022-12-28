@@ -53,6 +53,8 @@ class GameInstance:
         return possible
 
     def at(self, x, y):
+        if x < 0 or y < 0 or x >= self.cols or y >= self.rows:
+            return 'O'
         return self.grid[y][x]
 
     def isAgentAt(self, x, y):
@@ -153,6 +155,7 @@ class GameInstance:
     def envReset(self):
         self.grid = [[' ' for _ in range(self.cols)] for _ in range(self.rows)]
         self.remainingFood = self.initialFood
+        self.foodPositionsToRestore = {}
         self.agents = {}
         for x, y in self.initialWalls:
             self.grid[y][x] = 'O'

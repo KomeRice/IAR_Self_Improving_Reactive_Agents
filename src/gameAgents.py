@@ -150,18 +150,24 @@ class MainAgent(Agent):
                 obsList.append(0)
         return np.array(obsList)
 
-    @staticmethod
-    def orientation(x, y, orientation):
-        if orientation == 0:
-            return x, y
-        elif orientation == 1:
-            return y, -x
+    def orientation(self, x, y, orientation):
+        orientation = orientation % 4
+        diffx = self.x - x
+        diffy = self.y - y
+        new_diffx = diffx
+        new_diffy = diffy
+
+        if orientation == 1:
+            new_diffx = diffy
+            new_diffy = -diffx
         elif orientation == 2:
-            return -x, -y
+            new_diffx = -diffx
+            new_diffy = -diffy
         elif orientation == 3:
-            return -y, x
-        else:
-            raise ValueError
+            new_diffx = -diffy
+            new_diffy = diffx
+
+        return x + new_diffx, y + new_diffy
 
     def doAllSensors(self, orientation=0):
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
