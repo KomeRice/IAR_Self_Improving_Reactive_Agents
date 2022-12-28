@@ -44,7 +44,11 @@ class QconAgent:
         :return: action_idx : int the index of the best action given the state
         """
         if not self.test and np.random.rand() < self.exploration_rate:
-            self.exploration_rate = max(0.1, self.exploration_rate - self.Temperature)
+            # if the last move collided, increase exploration rate else decrease it
+            if state[0][-1] == 1:
+                self.exploration_rate = max(0.1, self.exploration_rate + self.Temperature)
+            else:
+                self.exploration_rate = max(0.1, self.exploration_rate - self.Temperature)
             action_idx = np.random.randint(self.action_dim)
         else:
             Q = np.zeros(4)

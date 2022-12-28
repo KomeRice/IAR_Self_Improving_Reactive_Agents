@@ -24,10 +24,9 @@ def main(args):
     try:
         os.mkdir(dirPrefix)
         os.mkdir(dirPrefix + 'QAgent')
-        os.mkdir(dirPrefix + 'saveR')
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
-
+    env = GridReader.readGrid(envPath)
     nb_play = 1
     nb_test = 50
     nb_run = 300
@@ -36,12 +35,12 @@ def main(args):
 
     print("----------------------TRAINING QCON AGENT----------------------")
     agent = QconAgent(dirPrefix)
-    training(envPath, agent, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
+    training(env, agent, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
     print("----------------------DONE----------------------")
 
     print("----------------------TRAINING QCONR AGENT----------------------")
     agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
-    training(envPath, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
+    training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
 
     print("----------------------DONE----------------------")
     # For testing
@@ -58,7 +57,7 @@ def main(args):
     """
 
 
-def training(envPath, agent, dirPrefix, filename, nb_play=300, nb_run=20, nb_test=50, freqSave=30, r=False,
+def training(env, agent, dirPrefix, filename, nb_play=300, nb_run=20, nb_test=50, freqSave=30, r=False,
              animation=False, anim_period=1):
     csvFile = open(f'{dirPrefix}{filename}.csv', 'w')
     csvFile.write('n,mean_rewards,mean_food_eaten\n')
@@ -66,18 +65,18 @@ def training(envPath, agent, dirPrefix, filename, nb_play=300, nb_run=20, nb_tes
     for i in tqdm(range(nb_play)):
         for run in range(nb_run):
             if animation and run % anim_period == 0:
-                rsum, foodEaten = simulation(envPath, agent, test=False, r=r, save_animation=True, dirPrefix=dirPrefix,
+                rsum, foodEaten = simulation(env, agent, test=False, save_animation=True, dirPrefix=dirPrefix,
                                              run_name=f'{filename}_play{i}_run{run}')
             else:
-                rsum, foodEaten = simulation(envPath, agent, test=False, r=r)
+                rsum, foodEaten = simulation(env, agent, test=False)
 
         meanRsum, meanFoodEaten = 0, 0
         for test in range(nb_test):
             if animation and test % anim_period == 0:
-                rsum, foodEaten = simulation(envPath, agent, test=False, r=r, save_animation=True, dirPrefix=dirPrefix,
+                rsum, foodEaten = simulation(env, agent, test=True, r=r, save_animation=True, dirPrefix=dirPrefix,
                                              run_name=f'{filename}_play{i}_test{test}')
             else:
-                rsum, foodEaten = simulation(envPath, agent, test=True)
+                rsum, foodEaten = simulation(env, agent, test=True)
             meanRsum += rsum
             meanFoodEaten += foodEaten
 
@@ -91,10 +90,9 @@ def training(envPath, agent, dirPrefix, filename, nb_play=300, nb_run=20, nb_tes
     csvFile.close()
 
 
-def simulation(envPath, agent, test=False, r=False, save_animation=False, dirPrefix='', run_name=''):
+def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix='', run_name=''):
     agent.test = test
     rsum = 0
-    env = GridReader.readGrid(envPath)
     ob = env.reset()
     agent.env = env
     step_count = 0
