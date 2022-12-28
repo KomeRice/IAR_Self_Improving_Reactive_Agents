@@ -47,9 +47,10 @@ class GameInstance:
             self.addFoodAgent(foodPos[0], foodPos[1])
 
     def movePossible(self, agent, deltaX, deltaY):
-        agent.did_collide = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(
+        possible = 0 <= agent.x + deltaX < self.cols and 0 <= agent.y + deltaY < self.rows and self.at(
             agent.x + deltaX, agent.y + deltaY) != 'O'
-        return agent.did_collide
+        agent.did_collide = not possible
+        return possible
 
     def at(self, x, y):
         return self.grid[y][x]
