@@ -239,7 +239,7 @@ class EnemyAgent(Agent):
             return
         old_pos = [self.x, self.y]
         actions = [self.moveUp, self.moveRight, self.moveDown, self.moveLeft]
-        act = [[self.x, self.y - 1], [self.x, self.y + 1], [self.x - 1, self.y], [self.x + 1, self.y]]
+        act = [[self.x, self.y - 1], [self.x + 1, self.y], [self.x, self.y - 1], [self.x - 1, self.y]]
         prob = []
         for k in act:
             prob.append(math.exp(0.33 * self.w_angle(k) * self.T_dist()))
