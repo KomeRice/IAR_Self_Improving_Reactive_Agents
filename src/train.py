@@ -120,7 +120,7 @@ def simulation(envPath, agent, test=False, r=False, save_animation=False, dirPre
             break
 
     if save_animation:
-        with imageio.get_writer(path_save + 'animation.gif', mode='I') as writer:
+        with imageio.get_writer(path_save + f'animation_{step_count + 1}frames.gif', mode='I') as writer:
             for i in range(step_count + 1):
                 image = imageio.imread(path_save + f'frame_{i}.png')
                 writer.append_data(image)

@@ -100,6 +100,7 @@ class GameInstance:
 
         if (agent.x, agent.y) in self.foodPositionsToRestore:
             self.grid[agent.y][agent.x] = self.foodPositionsToRestore[(agent.x, agent.y)].id
+            self.foodPositionsToRestore.pop((agent.x, agent.y))
         else:
             self.grid[agent.y][agent.x] = ' '
         if isinstance(agent, ag.EnemyAgent) and self.isAgentAt(newX, newY):
