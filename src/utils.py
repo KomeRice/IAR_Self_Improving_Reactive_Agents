@@ -37,12 +37,6 @@ class NN(nn.Module):
     def load_model(self, filename):
         return torch.load(filename)
 
-    def loss(self, previous_action, u, Ui):
-        """previous action example = [0,0,1,0] (go to east)"""
-        return previous_action * (u - Ui)
-
-    def sigmoid(self, x):
-        return 2 * torch.sigmoid(x) - 1
 
 
 def plot_examples(data):

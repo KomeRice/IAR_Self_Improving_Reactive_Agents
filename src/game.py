@@ -158,8 +158,9 @@ class GameInstance:
         self.distributeFood()
 
     def reset(self):
+        self.envReset()
         observation = self.mainAgent.observation()
-        return observation  # TODO pour instant on utilise des I/O
+        return observation
 
     def getFoodEaten(self):
         return self.initialFood - self.remainingFood
