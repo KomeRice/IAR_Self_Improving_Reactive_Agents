@@ -34,14 +34,13 @@ class QconAgent:
         self.learn_every = 1
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.learning_rate)
-        self.loss_fn = torch.nn.SmoothL1Loss()
+        self.loss_fn = torch.nn.L1Loss()
 
         self.env = env
 
     def act(self, state):
         """Predict and return the best action given the state
         :param state: list[int] observation of the state
-        :param test: bool check if training or testing mode
         :return: action_idx : int the index of the best action given the state
         """
         if not self.test and np.random.rand() < self.exploration_rate:
@@ -52,7 +51,7 @@ class QconAgent:
             for a in range(4):
                 state = torch.FloatTensor(state)
                 Q[a] = self.net(state, model="online")
-                state = self.env.mainAgent.observation(a)
+                state = self.env.mainAgent.observation((a + 1) % 4)
             action_idx = np.argmax(Q)
         self.curr_step += 1
         return action_idx
@@ -68,13 +67,9 @@ class QconAgent:
         for a in range(self.action_dim):
             state = torch.FloatTensor(state)
             Q[:, a] = self.net(state, model="online").view(-1)
-            state = self.env.mainAgent.observation(a)
-        test = np.array(action.detach().cpu().numpy())
-        t = Q[range(to_sample), np.array(action.detach().cpu().numpy())]
+            state = self.env.mainAgent.observation((a+1) % 4)
         return Q[range(to_sample), np.array(action.detach().cpu().numpy())]
 
-
-    @torch.no_grad()
     def td_target(self, reward, next_state, done):
         """ Aggregate current reward and all the estimated next rewards
         :param reward: current reward
@@ -87,7 +82,7 @@ class QconAgent:
         for a in range(self.action_dim):
             next_state = torch.FloatTensor(next_state)
             next_Q[:, a] = self.net(next_state, model="target").view(-1)
-            next_state = self.env.mainAgent.observation(a)
+            next_state = self.env.mainAgent.observation((a + 1) % 4)
         return reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
 
     def update_Q_online(self, td_estimate, td_target):
@@ -135,7 +130,7 @@ class QconAgent:
         """
         Retrieve a batch of experiences from memory
         """
-        to_sample = min(len(self.memory),self.batch_size)
+        to_sample = min(len(self.memory), self.batch_size)
         batch = random.sample(self.memory, to_sample)
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
@@ -149,7 +144,7 @@ class QconAgent:
 
         if self.curr_step % self.learn_every != 0:
             return None, None
-
+        self.optimizer.zero_grad()
         # Sample from memory
         state, next_state, action, reward, done = self.recall()
 
@@ -160,7 +155,7 @@ class QconAgent:
         td_tgt = self.td_target(reward, next_state, done)
 
         # Backpropagate loss through Q_online
-        loss = self.update_Q_online(td_est, td_tgt)
+        loss = self.update_Q_online(td_est, td_tgt.detach())
 
         return td_est.mean().item(), loss
 
