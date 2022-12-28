@@ -50,6 +50,12 @@ def plot_examples(data):
     plt.imshow(np.array(data), cmap=cmap)
     plt.show()
 
+def save_plot(data, filepath):
+    cmap = ListedColormap(["white", "black", "red", "blue", "green"])
+    plt.imshow(np.array(data), cmap=cmap)
+    plt.savefig(filepath)
+
+
 
 class Activation_Sigmoid(nn.Module):
     def __init__(self):
