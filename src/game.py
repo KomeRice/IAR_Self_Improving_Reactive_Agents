@@ -65,6 +65,10 @@ class GameInstance:
         if not self.movePossible(agent, deltaX, deltaY):
             if isinstance(agent, ag.MainAgent):
                 agent.energy -= 1
+                if agent.energy == 0:
+                    if self.verbose:
+                        print('Game over: Died to exhaustion')
+                    return True, 0
             return False, 0
         newX = agent.x + deltaX
         newY = agent.y + deltaY
