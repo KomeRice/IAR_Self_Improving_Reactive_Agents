@@ -62,6 +62,8 @@ class GameInstance:
 
     def doMove(self, agent, deltaX, deltaY):
         if not self.movePossible(agent, deltaX, deltaY):
+            if isinstance(agent, ag.MainAgent):
+                agent.energy -= 1
             return False, 0
         newX = agent.x + deltaX
         newY = agent.y + deltaY
