@@ -44,10 +44,22 @@ def plot_examples(data):
     plt.imshow(np.array(data), cmap=cmap)
     plt.show()
 
-def save_plot(data, filepath):
+def save_plot(data, filepath, env=None, showSensors=False):
+    plt.figure()
     cmap = ListedColormap(["white", "black", "red", "blue", "green"])
     plt.imshow(np.array(data), cmap=cmap)
+    if showSensors:
+        sensorDataFourway = [env.mainAgent.getLabeledPositions(orient) for orient in range(4)]
+        sensorData = sensorDataFourway[0]
+        for data in sensorData:
+            x, y = data['coords']
+            label = data['label']
+            o = data['orientation']
+            if x < 0 or x > env.cols or y < 0 or y > env.rows or label == 'W':
+                continue
+            plt.text(x, y, label, va='center', ha='center')
     plt.savefig(filepath)
+    plt.close()
 
 
 

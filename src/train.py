@@ -27,20 +27,21 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 1
-    nb_test = 50
+    nb_play = 7
+    nb_test = 20
     nb_run = 300
-    anim_period = 25
+    anim_period = 100
+    test_period = 20
     do_anim = True
 
     print("----------------------TRAINING QCON AGENT----------------------")
-    agent = QconAgent(dirPrefix)
-    training(env, agent, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
+    agentClass = QconAgent
+    training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")
-
+    """
     print("----------------------TRAINING QCONR AGENT----------------------")
     agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
-    training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
+    training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)"""
 
     print("----------------------DONE----------------------")
     # For testing
@@ -57,31 +58,35 @@ def main(args):
     """
 
 
-def training(env, agent, dirPrefix, filename, nb_play=300, nb_run=20, nb_test=50, freqSave=30, r=False,
+def training(env, agentClass, dirPrefix, filename, nb_play=7, nb_run=300, nb_test=50, freqSave=30, r=False, test_period=20,
              animation=False, anim_period=1):
     csvFile = open(f'{dirPrefix}{filename}.csv', 'w')
     csvFile.write('n,mean_rewards,mean_food_eaten\n')
 
     for i in tqdm(range(nb_play)):
+        agent = agentClass(dirPrefix)
+        meanRsum, meanFoodEaten = 0, 0
+        test_count = 0
         for run in range(nb_run):
-            if animation and run % anim_period == 0:
+            if animation and (run + 1) % anim_period == 0:
                 rsum, foodEaten = simulation(env, agent, test=False, save_animation=True, dirPrefix=dirPrefix,
-                                             run_name=f'{filename}_play{i}_run{run}')
+                                             run_name=f'{filename}_play{i}_run{run}_train')
             else:
                 rsum, foodEaten = simulation(env, agent, test=False)
+            if run % test_period == 0:
+                test_count += 1
+                for test in range(nb_test):
+                    if animation and test == 0:
+                        rsum, foodEaten = simulation(env, agent, test=True, r=r, save_animation=True,
+                                                     dirPrefix=dirPrefix,
+                                                     run_name=f'{filename}_play{i}_run{run}_test{test}')
+                    else:
+                        rsum, foodEaten = simulation(env, agent, test=True)
+                    meanRsum += rsum
+                    meanFoodEaten += foodEaten
 
-        meanRsum, meanFoodEaten = 0, 0
-        for test in range(nb_test):
-            if animation and test % anim_period == 0:
-                rsum, foodEaten = simulation(env, agent, test=True, r=r, save_animation=True, dirPrefix=dirPrefix,
-                                             run_name=f'{filename}_play{i}_test{test}')
-            else:
-                rsum, foodEaten = simulation(env, agent, test=True)
-            meanRsum += rsum
-            meanFoodEaten += foodEaten
-
-        meanRsum /= nb_test
-        meanFoodEaten /= nb_test
+        meanRsum /= (test_count * nb_test)
+        meanFoodEaten /= (test_count * nb_test)
 
         csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
 
@@ -101,7 +106,8 @@ def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix=
         path_save = f'{dirPrefix}animation/{run_name}/'
         if not os.path.exists(f'{dirPrefix}animation'):
             os.mkdir(f'{dirPrefix}animation')
-        os.mkdir(path_save)
+        if not os.path.exists(path_save):
+            os.mkdir(path_save)
         animate(env, path_save + 'frame_0.png')
 
     while True:
@@ -140,7 +146,7 @@ def render(game):
 
 def animate(game, filepath):
     plot = game.affPlot()
-    save_plot(plot, filepath)
+    save_plot(plot, filepath, env=game, showSensors=True)
 
 
 if __name__ == '__main__':

@@ -90,6 +90,10 @@ class MainAgent(Agent):
             'minDist': 1
         }
 
+        self.sensY = sensorY
+        self.sensO = sensorO
+        self.sensX = sensorX
+
         self.foodSensor = [sensorX, sensorO, sensorY]
         self.enemySensor = [sensorX, sensorO]
         self.obstacleSensor = [{
@@ -97,6 +101,8 @@ class MainAgent(Agent):
             'resolution': 1,
             'minDist': 1
         }]
+
+        self.sensorWall = self.obstacleSensor[0]
 
     def doFoodSensor(self, orientation=0):
         obsList = []
@@ -167,7 +173,7 @@ class MainAgent(Agent):
             new_diffx = -diffy
             new_diffy = diffx
 
-        return x + new_diffx, y + new_diffy
+        return self.x + new_diffx, self.y + new_diffy
 
     def doAllSensors(self, orientation=0):
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
@@ -180,6 +186,17 @@ class MainAgent(Agent):
 		:return: A tuple (food, enemy, obstacle) of bit-encoded np.array objects corresponding to each sensor output
 		"""
         return self.doFoodSensor(orientation), self.doEnemySensor(orientation), self.doObstacleSensor(orientation)
+
+    def getLabeledPositions(self, orientation=0):
+        out = []
+        for sensor, label in zip([self.sensY, self.sensO, self.sensX, self.sensorWall], ['Y', 'O', 'X', 'W']):
+            for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
+                effective_x, effective_y = self.orientation(x, y, orientation)
+                out.append({'coords': (effective_x, effective_y),
+                            'label': label,
+                            'orientation': orientation})
+        return out
+
 
     def observ(self, orientation=0):  # TODO why the orientation is not taken in account
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
