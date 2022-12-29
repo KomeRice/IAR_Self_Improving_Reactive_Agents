@@ -129,7 +129,13 @@ class QconAgent:
         Retrieve a batch of experiences from memory
         """
         to_sample = min(len(self.memory), self.batch_size)
-        batch = random.sample(self.memory, to_sample)
+        batch = []
+        for i in range(to_sample):
+            n = len(self.memory)
+            w = min(3.0, 1+0.02*n)
+            r = random.uniform(0, 1)
+            k = n*np.log(1+r*(np.exp(w)-1))/w
+            batch.append(self.memory[int(k)])
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
 
@@ -164,3 +170,4 @@ class QconAgent:
         """Load model from input directory
         """
         self.net.load_state_dict(torch.load(inputDir, map_location=self.device))
+

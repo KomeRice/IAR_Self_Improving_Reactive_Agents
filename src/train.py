@@ -39,7 +39,7 @@ def main(args):
     print("----------------------DONE----------------------")
 
     print("----------------------TRAINING QCONR AGENT----------------------")
-    agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
+    agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=100)  # action replay
     training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
 
     print("----------------------DONE----------------------")
