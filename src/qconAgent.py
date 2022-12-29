@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from collections import deque
-from utils import NN
+from utils import NN,NNDQN
 import torch
 
 
@@ -171,3 +171,16 @@ class QconAgent:
         """
         self.net.load_state_dict(torch.load(inputDir, map_location=self.device))
 
+
+class DQNAgent(QconAgent):
+    def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=1, test=False):
+        super().__init__(savedir, env, nbStep, batch_size, memory_size, test)
+        self.test = False
+
+        self.net = NNDQN(145, 1).float()
+        self.net = self.net.to(device=self.device)
+
+        self.learning_rate = 1e-3
+        self.sync_every = 1e4
+        self.optimizer = torch.optim.Adam(self.net.parameters(),lr=self.learning_rate)
+        self.batch_size = 32

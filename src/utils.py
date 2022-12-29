@@ -38,17 +38,40 @@ class NN(nn.Module):
         return torch.load(filename)
 
 
-
 def plot_examples(data):
     cmap = ListedColormap(["white", "black", "red", "blue", "green"])
     plt.imshow(np.array(data), cmap=cmap)
     plt.show()
+
 
 def save_plot(data, filepath):
     cmap = ListedColormap(["white", "black", "red", "blue", "green"])
     plt.imshow(np.array(data), cmap=cmap)
     plt.savefig(filepath)
 
+
+class NNDQN(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+
+        self.online = nn.Sequential(
+            nn.Linear(input_dim, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_dim)
+        )
+
+        self.target = copy.deepcopy(self.online)
+
+        # Q_target parameters are frozen.
+        for p in self.target.parameters():
+            p.requires_grad = False
+
+    def forward(self, input, model):
+        input = input.type(torch.float32)
+        if model == "online":
+            return self.online(input)
+        elif model == "target":
+            return self.target(input)
 
 
 class Activation_Sigmoid(nn.Module):
