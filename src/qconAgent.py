@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from collections import deque
-from utils import NN
+from utils import NN,NNDQN
 import torch
 
 
@@ -42,16 +42,19 @@ class QconAgent:
         :return: action_idx : int the index of the best action given the state
         """
         t = self.Temperature
-        if self.test:
-            t = 0
         Q = np.zeros(4)
-        prob = []
-        for a in range(4):
-            Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
-            prob.append(np.exp(Q[a]/t))
-        total = np.sum(prob)
-        p = [i/total for i in prob]
-        action_idx = np.random.choice(range(4), p=p)
+        if self.test:
+            for a in range(4):
+                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+            action_idx = np.argmax(Q)
+        else:
+            prob = []
+            for a in range(4):
+                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+                prob.append(np.exp(Q[a]/t))
+            total = np.sum(prob)
+            p = [i/total for i in prob]
+            action_idx = np.random.choice(range(4), p=p)
         self.curr_step += 1
         return action_idx
 
@@ -86,8 +89,8 @@ class QconAgent:
         :param td_target: aggregation of rewards
         :return:
         """
-        loss = self.loss_fn(td_estimate, td_target)
         self.optimizer.zero_grad()
+        loss = self.loss_fn(td_estimate, td_target)
         loss = torch.autograd.Variable(loss, requires_grad=True)
         loss.backward()
         self.optimizer.step()
@@ -126,7 +129,13 @@ class QconAgent:
         Retrieve a batch of experiences from memory
         """
         to_sample = min(len(self.memory), self.batch_size)
-        batch = random.sample(self.memory, to_sample)
+        batch = []
+        for i in range(to_sample):
+            n = len(self.memory)
+            w = min(3.0, 1+0.02*n)
+            r = random.uniform(0, 1)
+            k = n*np.log(1+r*(np.exp(w)-1))/w
+            batch.append(self.memory[int(k)])
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
 
@@ -161,3 +170,17 @@ class QconAgent:
         """Load model from input directory
         """
         self.net.load_state_dict(torch.load(inputDir, map_location=self.device))
+
+
+class DQNAgent(QconAgent):
+    def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=1, test=False):
+        super().__init__(savedir, env, nbStep, batch_size, memory_size, test)
+        self.test = False
+
+        self.net = NNDQN(145, 1).float()
+        self.net = self.net.to(device=self.device)
+
+        self.learning_rate = 1e-3
+        self.sync_every = 1e4
+        self.optimizer = torch.optim.Adam(self.net.parameters(),lr=self.learning_rate)
+        self.batch_size = 32

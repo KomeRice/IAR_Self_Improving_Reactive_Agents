@@ -2,7 +2,7 @@ import os.path
 import sys
 from tqdm import tqdm
 from gridReader import GridReader
-from qconAgent import QconAgent
+from qconAgent import QconAgent,DQNAgent
 from utils import plot_examples, save_plot
 import imageio.v2 as imageio
 import time
@@ -41,8 +41,8 @@ def main(args):
     """
     print("----------------------TRAINING QCONR AGENT----------------------")
     agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
-    training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)"""
-
+    training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
+    """
     print("----------------------DONE----------------------")
     # For testing
     """
