@@ -16,8 +16,7 @@ class NN(nn.Module):
         self.online = nn.Sequential(
             nn.Linear(inSize, 30),
             activation,
-            nn.Linear(30, outSize),
-            activation
+            nn.Linear(30, outSize)
         )
         self.target = copy.deepcopy(self.online)
 

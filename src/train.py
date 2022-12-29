@@ -27,16 +27,20 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 7
-    nb_test = 20
-    nb_run = 300
+    nb_play = 50
+    nb_test = 50
+    nb_train = 20
     anim_period = 100
     test_period = 20
     do_anim = True
 
     print("----------------------TRAINING QCON AGENT----------------------")
     agentClass = QconAgent
-    training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    print("----------------------DONE----------------------")
+    print("----------------------TRAINING QCON AGENT----------------------")
+    agentClass = DQNAgent
+    training(env, agentClass, dirPrefix, filename="OutputDQN", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")
     """
     print("----------------------TRAINING QCONR AGENT----------------------")
@@ -58,35 +62,32 @@ def main(args):
     """
 
 
-def training(env, agentClass, dirPrefix, filename, nb_play=7, nb_run=300, nb_test=50, freqSave=30, r=False, test_period=20,
+def training(env, agentClass, dirPrefix, filename, nb_play=20, nb_train=20, nb_test=50, freqSave=30, r=False, test_period=20,
              animation=False, anim_period=1):
     csvFile = open(f'{dirPrefix}{filename}.csv', 'w')
     csvFile.write('n,mean_rewards,mean_food_eaten\n')
+    agent = agentClass(dirPrefix)
 
     for i in tqdm(range(nb_play)):
-        agent = agentClass(dirPrefix)
         meanRsum, meanFoodEaten = 0, 0
-        test_count = 0
-        for run in range(nb_run):
-            if animation and (run + 1) % anim_period == 0:
+        for run in range(nb_train):
+            if animation and run == nb_train -1:
                 rsum, foodEaten = simulation(env, agent, test=False, save_animation=True, dirPrefix=dirPrefix,
                                              run_name=f'{filename}_play{i}_run{run}_train')
             else:
                 rsum, foodEaten = simulation(env, agent, test=False)
-            if run % test_period == 0:
-                test_count += 1
-                for test in range(nb_test):
-                    if animation and test == 0:
-                        rsum, foodEaten = simulation(env, agent, test=True, r=r, save_animation=True,
-                                                     dirPrefix=dirPrefix,
-                                                     run_name=f'{filename}_play{i}_run{run}_test{test}')
-                    else:
-                        rsum, foodEaten = simulation(env, agent, test=True)
-                    meanRsum += rsum
-                    meanFoodEaten += foodEaten
+        for test in range(nb_test):
+            if animation and test == nb_test - 1:
+                rsum, foodEaten = simulation(env, agent, test=True, r=r, save_animation=True,
+                                             dirPrefix=dirPrefix,
+                                             run_name=f'{filename}_play{i}_test{test}')
+            else:
+                rsum, foodEaten = simulation(env, agent, test=True)
+            meanRsum += rsum
+            meanFoodEaten += foodEaten
 
-        meanRsum /= (test_count * nb_test)
-        meanFoodEaten /= (test_count * nb_test)
+        meanRsum /= nb_test
+        meanFoodEaten /= nb_test
 
         csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
 
