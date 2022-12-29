@@ -20,9 +20,8 @@ class QconAgent:
 
         # discount factor
         self.gamma = 0.9
-        self.exploration_rate = 1
         self.Temperature = 0.05
-        self.learning_rate = 1e-3
+        self.learning_rate = 0.3
 
         # max step
         self.nbStep = nbStep
@@ -31,7 +30,6 @@ class QconAgent:
         self.batch_size = batch_size
         self.memory = deque(maxlen=memory_size)
         self.sync_every = 1
-        self.learn_every = 1
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.learning_rate)
         self.loss_fn = torch.nn.L1Loss()
@@ -43,18 +41,17 @@ class QconAgent:
         :param state: list[int] observation of the state
         :return: action_idx : int the index of the best action given the state
         """
-        if not self.test and np.random.rand() < self.exploration_rate:
-            # if the last move collided, increase exploration rate else decrease it
-            if state[0][-1] == 1:
-                self.exploration_rate = max(0.1, self.exploration_rate + self.Temperature)
-            else:
-                self.exploration_rate = max(0.1, self.exploration_rate - self.Temperature)
-            action_idx = np.random.randint(self.action_dim)
-        else:
-            Q = np.zeros(4)
-            for a in range(4):
-                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
-            action_idx = np.argmax(Q)
+        t = self.Temperature
+        if self.test:
+            t = 0
+        Q = np.zeros(4)
+        prob = []
+        for a in range(4):
+            Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+            prob.append(np.exp(Q[a]/t))
+        total = np.sum(prob)
+        p = [i/total for i in prob]
+        action_idx = np.random.choice(range(4), p=p)
         self.curr_step += 1
         return action_idx
 
@@ -140,8 +137,6 @@ class QconAgent:
         if self.curr_step % self.sync_every == 0:
             self.sync_Q_target()
 
-        if self.curr_step % self.learn_every != 0:
-            return None, None
         self.optimizer.zero_grad()
         # Sample from memory
         state, next_state, action, reward, done = self.recall()
