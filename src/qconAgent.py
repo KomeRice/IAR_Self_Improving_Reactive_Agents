@@ -42,16 +42,19 @@ class QconAgent:
         :return: action_idx : int the index of the best action given the state
         """
         t = self.Temperature
-        if self.test:
-            t = 0
         Q = np.zeros(4)
-        prob = []
-        for a in range(4):
-            Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
-            prob.append(np.exp(Q[a]/t))
-        total = np.sum(prob)
-        p = [i/total for i in prob]
-        action_idx = np.random.choice(range(4), p=p)
+        if self.test:
+            for a in range(4):
+                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+            action_idx = np.argmax(Q)
+        else:
+            prob = []
+            for a in range(4):
+                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+                prob.append(np.exp(Q[a]/t))
+            total = np.sum(prob)
+            p = [i/total for i in prob]
+            action_idx = np.random.choice(range(4), p=p)
         self.curr_step += 1
         return action_idx
 
@@ -86,8 +89,8 @@ class QconAgent:
         :param td_target: aggregation of rewards
         :return:
         """
-        loss = self.loss_fn(td_estimate, td_target)
         self.optimizer.zero_grad()
+        loss = self.loss_fn(td_estimate, td_target)
         loss = torch.autograd.Variable(loss, requires_grad=True)
         loss.backward()
         self.optimizer.step()

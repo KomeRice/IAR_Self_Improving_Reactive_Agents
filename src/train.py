@@ -31,7 +31,7 @@ def main(args):
     nb_test = 50
     nb_run = 300
     anim_period = 25
-    do_anim = True
+    do_anim = False
 
     print("----------------------TRAINING QCON AGENT----------------------")
     agent = QconAgent(dirPrefix)
