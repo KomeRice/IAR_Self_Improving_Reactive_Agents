@@ -9,6 +9,14 @@ import copy
 from matplotlib.colors import ListedColormap
 
 
+def set_weigths(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        # get the number of the inputs
+        m.weight.data.uniform_(-0.1, 0.1)
+        m.bias.data.fill_(0)
+
+
 class NN(nn.Module):
     def __init__(self, inSize, outSize):
         super(NN, self).__init__()
@@ -18,6 +26,7 @@ class NN(nn.Module):
             activation,
             nn.Linear(30, outSize)
         )
+        self.online.apply(set_weigths)
         self.target = copy.deepcopy(self.online)
 
     def setcuda(self, device):
