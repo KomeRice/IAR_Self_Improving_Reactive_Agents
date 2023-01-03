@@ -46,7 +46,10 @@ def save_plot(data, filepath, env=None, showSensors=False, doOrientation=-1):
     sensorNb = 0
     if showSensors:
         sensorDataFourway = [env.mainAgent.getLabeledPositions(orient) for orient in range(4)]
-        sensorData = sensorDataFourway[doOrientation]
+        if doOrientation == -1:
+            sensorData = sensorDataFourway[0]
+        else:
+            sensorData = sensorDataFourway[doOrientation]
         for data in sensorData:
             x, y = data['coords']
             label = data['label']
