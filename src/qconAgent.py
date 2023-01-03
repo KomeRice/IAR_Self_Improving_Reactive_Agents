@@ -1,3 +1,4 @@
+import copy
 import random
 import numpy as np
 from collections import deque
@@ -17,6 +18,10 @@ class QconAgent:
         # 145 input neural network
         self.net = NN(145, 1).float()
         self.net = self.net.to(device=self.device)
+        self.target_net = copy.deepcopy(self.net)
+        # Q_target parameters are frozen.
+        for p in self.target_net.parameters():
+            p.requires_grad = False
 
         # discount factor
         self.gamma = 0.9
@@ -45,12 +50,12 @@ class QconAgent:
         Q = np.zeros(4)
         if self.test:
             for a in range(4):
-                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+                Q[a] = self.net(torch.FloatTensor(state[a]))
             action_idx = np.argmax(Q)
         else:
             prob = []
             for a in range(4):
-                Q[a] = self.net(torch.FloatTensor(state[a]), model="online")
+                Q[a] = self.net(torch.FloatTensor(state[a]))
                 prob.append(np.exp(Q[a]/t))
             total = np.sum(prob)
             p = [i/total for i in prob]
@@ -67,7 +72,7 @@ class QconAgent:
         to_sample = min(len(self.memory), self.batch_size)
         Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
-            Q[:, a] = self.net(state[:, a], model="online").view(-1)
+            Q[:, a] = self.net(state[:, a]).view(-1)
         return Q[range(to_sample), np.array(action.detach().cpu().numpy())]
 
     def td_target(self, reward, next_state, done):
@@ -80,7 +85,7 @@ class QconAgent:
         to_sample = min(len(self.memory), self.batch_size)
         next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         for a in range(self.action_dim):
-            next_Q[:, a] = self.net(next_state[:, a], model="target").view(-1)
+            next_Q[:, a] = self.target_net(next_state[:, a]).view(-1)
         return reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
 
     def update_Q_online(self, td_estimate, td_target):
@@ -91,7 +96,6 @@ class QconAgent:
         """
         self.optimizer.zero_grad()
         loss = self.loss_fn(td_estimate, td_target)
-        loss = torch.autograd.Variable(loss, requires_grad=True)
         loss.backward()
         self.optimizer.step()
         return loss.item()
@@ -100,7 +104,7 @@ class QconAgent:
         """
         Sync the online and target network
         """
-        self.net.target.load_state_dict(self.net.online.state_dict())
+        self.target_net.load_state_dict(self.net.state_dict())
 
     def store(self, state, next_state, action, reward, done):
         """
@@ -173,12 +177,16 @@ class QconAgent:
 
 
 class DQNAgent(QconAgent):
-    def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=1, test=False):
+    def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=100, test=False):
         super().__init__(savedir, env, nbStep, batch_size, memory_size, test)
         self.test = False
 
         self.net = NNDQN(145, 1).float()
         self.net = self.net.to(device=self.device)
+        self.target_net = copy.deepcopy(self.net)
+        # Q_target parameters are frozen.
+        for p in self.target_net.parameters():
+            p.requires_grad = False
 
         self.learning_rate = 1e-3
         self.sync_every = 1e4

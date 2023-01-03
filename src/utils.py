@@ -18,17 +18,14 @@ class NN(nn.Module):
             activation,
             nn.Linear(30, outSize)
         )
-        self.target = copy.deepcopy(self.online)
+        self.online.apply(set_weigths)
 
     def setcuda(self, device):
         self.cuda(device=device)
 
-    def forward(self, input, model):
+    def forward(self, input):
         input = input.type(torch.float32)
-        if model == "online":
-            return self.online(input)
-        elif model == "target":
-            return self.target(input)
+        return self.online(input)
 
     def save_model(self, filename):
         torch.save(self, filename)
@@ -42,19 +39,24 @@ def plot_examples(data):
     plt.imshow(np.array(data), cmap=cmap)
     plt.show()
 
-def save_plot(data, filepath, env=None, showSensors=False):
+def save_plot(data, filepath, env=None, showSensors=False, doOrientation=-1):
     plt.figure()
     cmap = ListedColormap(["white", "black", "red", "blue", "green"])
     plt.imshow(np.array(data), cmap=cmap)
+    sensorNb = 0
     if showSensors:
         sensorDataFourway = [env.mainAgent.getLabeledPositions(orient) for orient in range(4)]
-        sensorData = sensorDataFourway[0]
+        sensorData = sensorDataFourway[doOrientation]
         for data in sensorData:
             x, y = data['coords']
             label = data['label']
             o = data['orientation']
             if x < 0 or x > env.cols or y < 0 or y > env.rows or label == 'W':
                 continue
+            if doOrientation != -1:
+                label = data['id']
+                sensorNb += 1
+
             plt.text(x, y, label, va='center', ha='center')
     plt.savefig(filepath)
     plt.close()
@@ -69,19 +71,13 @@ class NNDQN(nn.Module):
             nn.ReLU(),
             nn.Linear(512, output_dim)
         )
+        self.online.apply(set_weigths)
 
-        self.target = copy.deepcopy(self.online)
 
-        # Q_target parameters are frozen.
-        for p in self.target.parameters():
-            p.requires_grad = False
 
-    def forward(self, input, model):
+    def forward(self, input):
         input = input.type(torch.float32)
-        if model == "online":
-            return self.online(input)
-        elif model == "target":
-            return self.target(input)
+        return self.online(input)
 
 
 class Activation_Sigmoid(nn.Module):
@@ -93,3 +89,11 @@ class Activation_Sigmoid(nn.Module):
         # Save input and calculate/save output
         # of the sigmoid function
         return 2 * (torch.sigmoid(inputs) - 0.5)
+
+
+def set_weigths(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        # get the number of the inputs
+        m.weight.data.uniform_(-0.1, 0.1)
+        m.bias.data.fill_(0)

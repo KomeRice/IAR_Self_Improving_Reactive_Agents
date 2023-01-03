@@ -1,3 +1,4 @@
+import math
 import os.path
 import sys
 from tqdm import tqdm
@@ -11,14 +12,15 @@ import time
 def main(args):
     envPath = 'grids/default.txt'
     if len(args) < 2:
-        filePath = 'grids/default.txt'
         print('No file path given, using grids/default.txt...')
-        if not os.path.exists(filePath):
-            print('Could not find grids/default.txt, restore the file or specify a grid path.')
-            return
     elif len(args) > 2:
         print(f'usage: python main.py <Path To Grid file> or python main.py to use default')
         return
+    elif len(args) == 2:
+        if not os.path.exists(args[1]):
+            print('Could not find grids/default.txt, restore the file or specify a grid path.')
+            return
+        envPath = args[1]
     startDate = time.time()
     dirPrefix = f'save_{startDate}/'
     try:
@@ -27,7 +29,7 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 50
+    nb_play = 300
     nb_test = 50
     nb_train = 20
     anim_period = 100
@@ -96,20 +98,23 @@ def training(env, agentClass, dirPrefix, filename, nb_play=20, nb_train=20, nb_t
     csvFile.close()
 
 
-def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix='', run_name=''):
+def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix='', run_name='', save_animation_orientation=False):
     agent.test = test
     rsum = 0
     ob = env.reset()
     agent.env = env
     step_count = 0
     path_save = ''
-    if save_animation:
+    if save_animation or save_animation_orientation:
         path_save = f'{dirPrefix}animation/{run_name}/'
         if not os.path.exists(f'{dirPrefix}animation'):
             os.mkdir(f'{dirPrefix}animation')
         if not os.path.exists(path_save):
             os.mkdir(path_save)
-        animate(env, path_save + 'frame_0.png')
+        if save_animation_orientation:
+            animateWithOrientation(env, path_save + 'frame_0.png', 0)
+        else:
+            animate(env, path_save + 'frame_0.png')
 
     while True:
         action = agent.act(ob)
@@ -124,6 +129,8 @@ def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix=
             render(env)
         if save_animation:
             animate(env, path_save + f'frame_{step_count}.png')
+        if save_animation_orientation:
+            animateWithOrientation(env, path_save + f'frame_{step_count}.png', step_count)
         if done:
             break
 
@@ -149,6 +156,10 @@ def animate(game, filepath):
     plot = game.affPlot()
     save_plot(plot, filepath, env=game, showSensors=True)
 
+def animateWithOrientation(game, filepath, stepCount):
+    orienta = stepCount % 4
+    plot = game.affPlot()
+    save_plot(plot, filepath, env=game, showSensors=True, doOrientation=orienta)
 
 if __name__ == '__main__':
     main(sys.argv)
