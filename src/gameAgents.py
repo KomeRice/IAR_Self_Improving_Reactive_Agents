@@ -201,7 +201,7 @@ class MainAgent(Agent):
         return out
 
 
-    def observ(self, orientation=0):  # TODO why the orientation is not taken in account
+    def observ(self, orientation=0):
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
 		and self.obstacleSensor; according to a given orientation.
 
@@ -264,7 +264,7 @@ class EnemyAgent(Agent):
         for k in act:
             prob.append(math.exp(0.33 * self.w_angle(k) * self.T_dist()))
         random.choices(actions, weights=prob)[0]()
-        if [self.x, self.y] == old_pos:  # on fait quoi si il reste sur place?
+        if [self.x, self.y] == old_pos:
             return
 
     def T_dist(self):

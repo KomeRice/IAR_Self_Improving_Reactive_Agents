@@ -70,7 +70,7 @@ class GameInstance:
                 if agent.energy == 0:
                     if self.verbose:
                         print('Game over: Died to exhaustion')
-                    return True, 0
+                    return True, -1
             return False, 0
         newX = agent.x + deltaX
         newY = agent.y + deltaY
@@ -98,7 +98,7 @@ class GameInstance:
             if agent.energy == 0:
                 if self.verbose:
                     print('Game over: Died to exhaustion')
-                return True, reward
+                return True, -1
 
         if (agent.x, agent.y) in self.foodPositionsToRestore:
             self.grid[agent.y][agent.x] = self.foodPositionsToRestore[(agent.x, agent.y)].id
