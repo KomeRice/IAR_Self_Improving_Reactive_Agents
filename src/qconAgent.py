@@ -150,20 +150,33 @@ class QconAgent:
         if self.curr_step % self.sync_every == 0:
             self.sync_Q_target()
 
-        self.optimizer.zero_grad()
         # Sample from memory
         state, next_state, action, reward, done = self.recall()
 
         # Get TD Estimate
-        td_est = self.td_estimate(state, action)
+        #td_est = self.td_estimate(state, action)
+        to_sample = min(len(self.memory), self.batch_size)
 
         # Get TD Target
-        td_tgt = self.td_target(reward, next_state, done)
+        #td_tgt = self.td_target(reward, next_state, done)
 
         # Backpropagate loss through Q_online
-        loss = self.update_Q_online(td_est, td_tgt.detach())
+        #loss = self.update_Q_online(td_est, td_tgt.detach())
 
-        return td_est.mean().item(), loss
+        Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
+        next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
+        for a in range(4):
+            Q[:, a] = self.net(state[:, a]).view(-1)
+            next_Q[:, a] = self.target_net(next_state[:, a]).view(-1)
+        td_est = Q[range(to_sample), np.array(action.detach().cpu().numpy())]
+        td_tgt = reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
+
+        loss = self.loss_fn(td_est, td_tgt)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return td_est.mean().item(), loss.item()
 
     def save(self, outputDir):
         """Save model to output directory

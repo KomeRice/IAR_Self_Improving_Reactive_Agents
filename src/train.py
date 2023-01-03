@@ -37,8 +37,8 @@ def main(args):
     do_anim = True
 
     print("----------------------TRAINING QCON AGENT----------------------")
-    agentClass = QconAgent
-    training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    #agentClass = QconAgent
+    #training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")
     print("----------------------TRAINING QCON AGENT----------------------")
     agentClass = DQNAgent
