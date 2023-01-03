@@ -163,13 +163,13 @@ class MainAgent(Agent):
         new_diffx = diffx
         new_diffy = diffy
 
-        if orientation == 1:
+        if orientation == 3:
             new_diffx = diffy
             new_diffy = -diffx
         elif orientation == 2:
             new_diffx = -diffx
             new_diffy = -diffy
-        elif orientation == 3:
+        elif orientation == 1:
             new_diffx = -diffy
             new_diffy = diffx
 
@@ -189,12 +189,15 @@ class MainAgent(Agent):
 
     def getLabeledPositions(self, orientation=0):
         out = []
+        identifier = 0
         for sensor, label in zip([self.sensY, self.sensO, self.sensX, self.sensorWall], ['Y', 'O', 'X', 'W']):
             for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
                 effective_x, effective_y = self.orientation(x, y, orientation)
                 out.append({'coords': (effective_x, effective_y),
                             'label': label,
-                            'orientation': orientation})
+                            'orientation': orientation,
+                            'id': identifier})
+                identifier += 1
         return out
 
 
