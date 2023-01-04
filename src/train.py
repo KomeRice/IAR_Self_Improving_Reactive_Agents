@@ -29,7 +29,7 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 300
+    nb_play = 20
     nb_test = 50
     nb_train = 20
     anim_period = 100
@@ -40,7 +40,7 @@ def main(args):
     #agentClass = QconAgent
     #training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")
-    print("----------------------TRAINING QCON AGENT----------------------")
+    print("----------------------TRAINING DQN AGENT----------------------")
     agentClass = DQNAgent
     training(env, agentClass, dirPrefix, filename="OutputDQN", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")

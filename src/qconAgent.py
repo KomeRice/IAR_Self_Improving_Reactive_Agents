@@ -2,7 +2,7 @@ import copy
 import random
 import numpy as np
 from collections import deque
-from utils import NN,NNDQN
+from utils import NN, NNDQN
 import torch
 
 
@@ -56,9 +56,9 @@ class QconAgent:
             prob = []
             for a in range(4):
                 Q[a] = self.net(torch.FloatTensor(state[a]))
-                prob.append(np.exp(Q[a]/t))
+                prob.append(np.exp(Q[a] / t))
             total = np.sum(prob)
-            p = [i/total for i in prob]
+            p = [i / total for i in prob]
             action_idx = np.random.choice(range(4), p=p)
         self.curr_step += 1
         return action_idx
@@ -136,9 +136,9 @@ class QconAgent:
         batch = []
         for i in range(to_sample):
             n = len(self.memory)
-            w = min(3.0, 1+0.02*n)
+            w = min(3.0, 1 + 0.02 * n)
             r = random.uniform(0, 1)
-            k = n*np.log(1+r*(np.exp(w)-1))/w
+            k = n * np.log(1 + r * (np.exp(w) - 1)) / w
             batch.append(self.memory[int(k)])
         state, next_state, action, reward, done = map(torch.stack, zip(*batch))
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
@@ -154,14 +154,14 @@ class QconAgent:
         state, next_state, action, reward, done = self.recall()
 
         # Get TD Estimate
-        #td_est = self.td_estimate(state, action)
+        # td_est = self.td_estimate(state, action)
         to_sample = min(len(self.memory), self.batch_size)
 
         # Get TD Target
-        #td_tgt = self.td_target(reward, next_state, done)
+        # td_tgt = self.td_target(reward, next_state, done)
 
         # Backpropagate loss through Q_online
-        #loss = self.update_Q_online(td_est, td_tgt.detach())
+        # loss = self.update_Q_online(td_est, td_tgt.detach())
 
         Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
         next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
@@ -203,5 +203,34 @@ class DQNAgent(QconAgent):
 
         self.learning_rate = 1e-3
         self.sync_every = 1e4
-        self.optimizer = torch.optim.Adam(self.net.parameters(),lr=self.learning_rate)
+        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.learning_rate)
         self.batch_size = 32
+
+        self.EPS_START = 0.9
+        self.EPS_END = 0.1
+        self.EPS_DECAY = 1e-7
+        self.TAU = 0.005
+
+    def act(self, state):
+        """Predict and return the best action given the state using E greedy
+        :param state: list[int] observation of the state
+        :return: action_idx : int the index of the best action given the state
+        """
+        Q = np.zeros(4)
+        if self.test:
+            for a in range(4):
+                Q[a] = self.net(torch.FloatTensor(state[a]))
+            action_idx = np.argmax(Q)
+        else:
+            p = random.random()
+            eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END) * np.exp(
+                -1. * self.curr_step / self.EPS_DECAY)
+            if p > eps_threshold:
+                with torch.no_grad():
+                    for a in range(4):
+                        Q[a] = self.net(torch.FloatTensor(state[a]))
+                    action_idx = np.argmax(Q)
+            else:
+                action_idx = random.randint(0,3)
+        self.curr_step += 1
+        return action_idx

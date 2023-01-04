@@ -69,18 +69,17 @@ class NNDQN(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
 
-        self.online = nn.Sequential(
+        self.layers = nn.ModuleList([
             nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, output_dim)
+            nn.Linear(512, output_dim)]
         )
-        self.online.apply(set_weigths)
-
-
+        self.layers.apply(set_weigths)
 
     def forward(self, input):
         input = input.type(torch.float32)
-        return self.online(input)
+        input = self.layers[0](input)
+        input = nn.functional.relu(input)
+        return self.layers[1](input)
 
 
 class Activation_Sigmoid(nn.Module):

@@ -13,7 +13,6 @@ class Agent:
         self.id = Agent.newId
         self.symbol = symbol
         self.gameInst = gameInst
-        self.did_collide = False
         Agent.newId += 1
 
     def moveUp(self):
@@ -72,7 +71,8 @@ class MainAgent(Agent):
         super().__init__(gameInst, x, y, symbol)
         self.energy = baseEnergy
         self.previous_action = [0, 0, 0, 0]
-        self.max_energy = baseEnergy + 15 * gameInst.initialFood
+        self.max_energy = baseEnergy + 15 * gameInst.initialFood -gameInst.initialFood
+        self.did_collide = False
 
         sensorY = {
             'radius': 10,
@@ -218,13 +218,13 @@ class MainAgent(Agent):
         max_energy = self.max_energy
         previous_action = self.previous_action
 
-        obs = [*ennemy, *food, *obstacle]
+        obs = [*food, *ennemy, *obstacle]
         for i in range(16):
             if i == round(16 / max_energy * energy):
                 obs.append(1)
             else:
                 obs.append(0)
-        obs = obs + previous_action
+        obs = obs + [*previous_action]
         if self.did_collide:
             obs.append(1)
         else:
@@ -237,15 +237,10 @@ class MainAgent(Agent):
     def step(self, ac):
         """ac between 0 and 3 corresponding to the action taken"""
         action = [self.moveUp, self.moveRight, self.moveDown, self.moveLeft]
-        self.previous_action = []
-        for a in range(len(action)):
-            if a == ac:
-                self.previous_action.append(1)
-            else:
-                self.previous_action.append(0)
-
-        obs = self.observation()
+        self.previous_action = np.zeros(4)
+        self.previous_action[ac] = 1
         done, rwd = action[ac]()
+        obs = self.observation()
         return obs, rwd, done  # return the if done and the reward of the action taken
 
 

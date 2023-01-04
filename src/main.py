@@ -19,17 +19,7 @@ def main(args):
 
 	filePath = args[1]
 	game = GridReader.readGrid(filePath)
-	game.printGameState()
 
-	print(game.mainAgent.x, game.mainAgent.y)
-
-	food = game.mainAgent.doFoodSensor()
-	enemy = game.mainAgent.doEnemySensor()
-	obst = game.mainAgent.doObstacleSensor()
-	
-	print('Food: ', food, len(food))
-	print('Enemy: ', enemy, len(enemy))
-	print('Obstacle: ', obst, len(obst))
 
 
 if __name__ == '__main__':
