@@ -121,7 +121,7 @@ def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix=
         new_ob, reward, done = env.step(action)
         if not test:
             agent.store(ob, new_ob, action, reward, done)
-            q, loss = agent.learn()
+            agent.learn()
         rsum += reward
         ob = new_ob
         step_count += 1
