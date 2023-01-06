@@ -48,57 +48,22 @@ class QconAgent:
         """
         t = self.Temperature
         Q = np.zeros(4)
-        if self.test:
+        self.net.eval()
+        with torch.no_grad():
             for a in range(4):
                 Q[a] = self.net(torch.FloatTensor(state[a]))
+        self.net.train()
+        if self.test:
             action_idx = np.argmax(Q)
         else:
             prob = []
             for a in range(4):
-                Q[a] = self.net(torch.FloatTensor(state[a]))
                 prob.append(np.exp(Q[a] / t))
             total = np.sum(prob)
             p = [i / total for i in prob]
             action_idx = np.random.choice(range(4), p=p)
         self.curr_step += 1
         return action_idx
-
-    def td_estimate(self, state, action):
-        """ Compute the Q values of the given state
-        :param action: action taken
-        :param state: current state
-        :return: Q values
-        """
-        to_sample = min(len(self.memory), self.batch_size)
-        Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
-        for a in range(self.action_dim):
-            Q[:, a] = self.net(state[:, a]).view(-1)
-        return Q[range(to_sample), np.array(action.detach().cpu().numpy())]
-
-    def td_target(self, reward, next_state, done):
-        """ Aggregate current reward and all the estimated next rewards
-        :param reward: current reward
-        :param next_state: next possible state
-        :param done: done
-        :return: y the aggregation of the rewards
-        """
-        to_sample = min(len(self.memory), self.batch_size)
-        next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
-        for a in range(self.action_dim):
-            next_Q[:, a] = self.target_net(next_state[:, a]).view(-1)
-        return reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
-
-    def update_Q_online(self, td_estimate, td_target):
-        """Update the learning network givent the Q values and target action
-        :param td_estimate: Q values
-        :param td_target: aggregation of rewards
-        :return:
-        """
-        self.optimizer.zero_grad()
-        loss = self.loss_fn(td_estimate, td_target)
-        loss.backward()
-        self.optimizer.step()
-        return loss.item()
 
     def sync_Q_target(self):
         """
@@ -147,36 +112,38 @@ class QconAgent:
         """train the network
         :return: mean of Q values,loss
         """
+        if len(self.memory) < self.batch_size:
+            return
+
         if self.curr_step % self.sync_every == 0:
             self.sync_Q_target()
 
         # Sample from memory
         state, next_state, action, reward, done = self.recall()
 
-        # Get TD Estimate
-        # td_est = self.td_estimate(state, action)
-        to_sample = min(len(self.memory), self.batch_size)
-
-        # Get TD Target
-        # td_tgt = self.td_target(reward, next_state, done)
-
-        # Backpropagate loss through Q_online
-        # loss = self.update_Q_online(td_est, td_tgt.detach())
-
-        Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
-        next_Q = torch.zeros((to_sample, self.action_dim)).to(self.device)
-        for a in range(4):
-            Q[:, a] = self.net(state[:, a]).view(-1)
-            next_Q[:, a] = self.target_net(next_state[:, a]).view(-1)
-        td_est = Q[range(to_sample), np.array(action.detach().cpu().numpy())]
-        td_tgt = reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
-
+        # Get TD Estimate and TD Target
+        td_est = torch.zeros(self.batch_size).to(self.device)
+        next_Q = torch.zeros(self.batch_size).to(self.device)
+        if self.batch_size == 1:
+            self.net.train()
+            td_est = self.net(state[:, action.item()]).view(-1)
+            self.net.eval()
+            next_Q[0] = torch.max(self.target_net(next_state).view(-1))
+        else:
+            for i in range(self.batch_size):
+                self.net.train()
+                td_est[i] = self.net(state[i, action[i]]).view(-1)
+                self.net.eval()
+                next_Q[i] = torch.max(self.target_net(next_state[i]).view(-1))
+        td_tgt = reward + (1 - done) * self.gamma * next_Q
+        # Backpropagate loss
+        self.net.train()
         loss = self.loss_fn(td_est, td_tgt)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        return td_est.mean().item(), loss.item()
+        return
 
     def save(self, outputDir):
         """Save model to output directory
@@ -211,25 +178,27 @@ class DQNAgent(QconAgent):
         self.EPS_DECAY = 1e-7
         self.TAU = 0.005
 
+        self.loss_fn = torch.nn.MSELoss()
+
     def act(self, state):
         """Predict and return the best action given the state using E greedy
         :param state: list[int] observation of the state
         :return: action_idx : int the index of the best action given the state
         """
         Q = np.zeros(4)
-        if self.test:
+        self.net.eval()
+        with torch.no_grad():
             for a in range(4):
                 Q[a] = self.net(torch.FloatTensor(state[a]))
+        self.net.train()
+        if self.test:
             action_idx = np.argmax(Q)
         else:
             p = random.random()
             eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END) * np.exp(
                 -1. * self.curr_step / self.EPS_DECAY)
             if p > eps_threshold:
-                with torch.no_grad():
-                    for a in range(4):
-                        Q[a] = self.net(torch.FloatTensor(state[a]))
-                    action_idx = np.argmax(Q)
+                action_idx = np.argmax(Q)
             else:
                 action_idx = random.randint(0,3)
         self.curr_step += 1
