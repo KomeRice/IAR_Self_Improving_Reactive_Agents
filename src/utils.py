@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import namedtuple, deque
+import gameAgents as ag
 
 import matplotlib.pyplot as plt
 import copy
@@ -60,7 +61,20 @@ def save_plot(data, filepath, env=None, showSensors=False, doOrientation=-1):
                 label = data['id']
                 sensorNb += 1
 
-            plt.text(x, y, label, va='center', ha='center')
+            try:
+                if env.isAgentAt(x, y):
+                    agent = env.getAgentAt(x, y)
+                    if isinstance(agent, ag.FoodAgent):
+                        plt.text(x, y, label, va='center', ha='center', color='red')
+                    elif isinstance(agent, ag.EnemyAgent):
+                        plt.text(x, y, label, va='center', ha='center', color='blue')
+                elif env.at(x, y) == 'O':
+                    plt.text(x, y, label, va='center', ha='center', color='yellow')
+                else:
+                    plt.text(x, y, label, va='center', ha='center')
+            except IndexError:
+                plt.text(x, y, label, va='center', ha='center')
+
     plt.savefig(filepath)
     plt.close()
 
