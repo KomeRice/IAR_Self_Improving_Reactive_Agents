@@ -82,18 +82,15 @@ def save_plot(data, filepath, env=None, showSensors=False, doOrientation=-1):
 class NNDQN(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
-
-        self.layers = nn.ModuleList([
-            nn.Linear(input_dim, 512),
-            nn.Linear(512, output_dim)]
+        self.layers = nn.Sequential(
+            nn.Linear(input_dim,128),
+            nn.ReLU(),
+            nn.Linear(128, output_dim)
         )
         self.layers.apply(set_weigths)
 
-    def forward(self, input):
-        input = input.type(torch.float32)
-        input = self.layers[0](input)
-        input = nn.functional.relu(input)
-        return self.layers[1](input)
+    def forward(self,x):
+        return self.layers(x)
 
 
 class Activation_Sigmoid(nn.Module):

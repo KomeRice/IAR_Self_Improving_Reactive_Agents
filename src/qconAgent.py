@@ -126,20 +126,21 @@ class QconAgent:
         next_Q = torch.zeros(self.batch_size).to(self.device)
         if self.batch_size == 1:
             self.net.train()
-            td_est = self.net(state[:, action.item()]).view(-1)
+            td_est = self.net(state[:, action.item()])
             self.net.eval()
-            next_Q[0] = torch.max(self.target_net(next_state).view(-1))
+            next_Q[0] = torch.max(self.target_net(next_state))
         else:
+            self.net.train()
+            td_est = self.net(state[range(self.batch_size), action.detach().numpy()]).squeeze()
+            self.net.eval()
             for i in range(self.batch_size):
-                self.net.train()
-                td_est[i] = self.net(state[i, action[i]]).view(-1)
-                self.net.eval()
-                next_Q[i] = torch.max(self.target_net(next_state[i]).view(-1))
+                next_Q[i] = torch.max(self.target_net(next_state[i]))
         td_tgt = reward + (1 - done) * self.gamma * next_Q
         # Backpropagate loss
         self.net.train()
         loss = self.loss_fn(td_est, td_tgt)
         self.optimizer.zero_grad()
+
         loss.backward()
         self.optimizer.step()
 
