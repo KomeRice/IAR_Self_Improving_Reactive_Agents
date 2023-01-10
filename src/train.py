@@ -29,27 +29,25 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 20
+    nb_play = 300
     nb_test = 50
     nb_train = 20
     anim_period = 100
     test_period = 20
-    do_anim = True
+    do_anim = False
 
-    print("----------------------TRAINING QCON AGENT----------------------")
+    #print("----------------------TRAINING QCON AGENT----------------------")
     #agentClass = QconAgent
     #training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
-    print("----------------------DONE----------------------")
+    #print("----------------------DONE----------------------")
     print("----------------------TRAINING DQN AGENT----------------------")
     agentClass = DQNAgent
     training(env, agentClass, dirPrefix, filename="OutputDQN", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")
-    """
-    print("----------------------TRAINING QCONR AGENT----------------------")
-    agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
-    training(env, agentR, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_run=nb_run, animation=do_anim, anim_period=anim_period)
-    """
-    print("----------------------DONE----------------------")
+    #print("----------------------TRAINING QCONR AGENT----------------------")
+    #agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
+    #training(env, QconAgent, dirPrefix, filename="OutputR", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period, agent=agentR)
+    #print("----------------------DONE----------------------")
     # For testing
     """
     agent = QconAgent(savedir, env)
@@ -65,10 +63,11 @@ def main(args):
 
 
 def training(env, agentClass, dirPrefix, filename, nb_play=20, nb_train=20, nb_test=50, freqSave=30, r=False, test_period=20,
-             animation=False, anim_period=1):
+             animation=False, anim_period=1, agent=None):
     csvFile = open(f'{dirPrefix}{filename}.csv', 'w')
     csvFile.write('n,mean_rewards,mean_food_eaten\n')
-    agent = agentClass(dirPrefix)
+    if agent is None:
+        agent = agentClass(dirPrefix)
 
     for i in tqdm(range(nb_play)):
         meanRsum, meanFoodEaten = 0, 0
@@ -91,7 +90,9 @@ def training(env, agentClass, dirPrefix, filename, nb_play=20, nb_train=20, nb_t
         meanRsum /= nb_test
         meanFoodEaten /= nb_test
 
-        csvFile.write(f'{i + 1},{meanRsum},{meanFoodEaten}\n')
+        cur_result = f'{i + 1},{meanRsum},{meanFoodEaten}\n'
+        print(f'\n{cur_result}')
+        csvFile.write(cur_result)
 
         if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
             agent.save(f'{dirPrefix}/QAgent/save_{i + 1}_{filename}')
