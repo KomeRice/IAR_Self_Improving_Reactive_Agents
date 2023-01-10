@@ -2,7 +2,7 @@ import copy
 import random
 import numpy as np
 from collections import deque
-from utils import NN, NNDQN
+from utils import NN, NNDQN, obs_rot90
 import torch
 
 
@@ -117,29 +117,35 @@ class QconAgent:
 
         if self.curr_step % self.sync_every == 0:
             self.sync_Q_target()
+        self.optimizer.zero_grad()
 
         # Sample from memory
         state, next_state, action, reward, done = self.recall()
 
         # Get TD Estimate and TD Target
-        td_est = torch.zeros(self.batch_size).to(self.device)
-        next_Q = torch.zeros(self.batch_size).to(self.device)
+        Q = torch.zeros((self.batch_size,4)).to(self.device)
+        next_Q = torch.zeros((self.batch_size, 4)).to(self.device)
         if self.batch_size == 1:
             self.net.train()
             td_est = self.net(state[:, action.item()])
             self.net.eval()
             next_Q[0] = torch.max(self.target_net(next_state))
         else:
-            self.net.train()
-            td_est = self.net(state[range(self.batch_size), action.detach().numpy()]).squeeze()
-            self.net.eval()
             for i in range(self.batch_size):
-                next_Q[i] = torch.max(self.target_net(next_state[i]))
-        td_tgt = reward + (1 - done) * self.gamma * next_Q
+                cur_state = state[i]
+                n_state = next_state[i]
+                for a in range(4):
+                    self.net.train()
+                    Q[i, a] = self.net(cur_state).view(-1)
+                    self.net.eval()
+                    next_Q[i, a] = self.target_net(n_state).view(-1)
+                    cur_state = torch.tensor(obs_rot90(cur_state))
+                    n_state = torch.tensor(obs_rot90(n_state))
+        td_est = Q[range(self.batch_size), action.detach().numpy()]
+        td_tgt = reward + (1 - done) * self.gamma * torch.max(next_Q, dim=1)[0]
         # Backpropagate loss
         self.net.train()
         loss = self.loss_fn(td_est, td_tgt)
-        self.optimizer.zero_grad()
 
         loss.backward()
         self.optimizer.step()
@@ -190,7 +196,8 @@ class DQNAgent(QconAgent):
         self.net.eval()
         with torch.no_grad():
             for a in range(4):
-                Q[a] = self.net(torch.FloatTensor(state[a]))
+                Q[a] = self.net(torch.FloatTensor(state))
+                state = obs_rot90(state)
         self.net.train()
         if self.test:
             action_idx = np.argmax(Q)

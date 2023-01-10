@@ -67,6 +67,35 @@ class FoodAgent(Agent):
 
 
 class MainAgent(Agent):
+    food_detector = [[(10, 0), (8, -2), (6, -4), (4, -6), (2, -8),
+                    (0, -10), (-2, -8), (-4, -6), (-6, -4), (-8, -2),
+                    (-10, 0), (-8, 2), (-6, 4), (-4, 6), (-2, 8),
+                    (0, 10), (2, 8), (4, 6), (6, 4), (8, 2)],
+                    [(6, 0), (4, -2), (2, -4),
+                    (0, -6), (-2, -4), (-4, -2),
+                    (-6, 0), (-4, 2), (-2, 4),
+                    (0, 6), (2, 4), (4, 2),
+                    (4, 0), (2, -2), (0, -4), (-2, -2), (-4, 0), (-2, 2), (0, 4), (2, 2)],
+                    [(2, 0), (1, -1), (0, -2), (-1, -1), (-2, 0), (-1, 1), (0, 2), (1, 1),
+                    (1, 0), (0, -1), (-1, 0), (0, 1)]]
+    enemy_detector = [[(6, 0), (4, -2), (2, -4),
+                     (0, -6), (-2, -4), (-4, -2),
+                     (-6, 0), (-4, 2), (-2, 4),
+                     (0, 6), (2, 4), (4, 2),
+                     (4, 0), (2, -2), (0, -4), (-2, -2), (-4, 0), (-2, 2), (0, 4), (2, 2)],
+                     [(2, 0), (1, -1), (0, -2), (-1, -1), (-2, 0), (-1, 1), (0, 2), (1, 1),
+                     (1, 0), (0, -1), (-1, 0), (0, 1)]]
+    obstacle_detector = [(4, 0), (3, -1), (2, -2), (1, -3),
+                        (0, -4), (-1, -3), (-2, -2), (-3, -1),
+                        (-4, 0), (-3, 1), (-2, 2), (-1, 3),
+                        (0, 4), (1, 3), (2, 2), (3, 1),
+                        (3, 0), (2, -1), (1, -2),
+                        (0, -3), (-1, -2), (-2, -1),
+                        (-3, 0), (-2, 1), (-1, 2),
+                        (0, 3), (1, 2), (2, 1),
+                        (2, 0), (1, -1), (0, -2), (-1, -1), (-2, 0), (-1, 1), (0, 2), (1, 1),
+                        (1, 0), (0, -1), (-1, 0), (0, 1)]
+
     def __init__(self, gameInst, x=0, y=0, symbol='I', baseEnergy=40):
         super().__init__(gameInst, x, y, symbol)
         self.energy = baseEnergy
@@ -117,35 +146,31 @@ class MainAgent(Agent):
 
     def doFoodSensor(self, orientation=0):
         obsList = []
-        for sensor in self.foodSensor:
-            for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-                effective_x, effective_y = self.orientation(x, y, orientation)
-                obsList.append(self.gameInst.sensor(effective_x, effective_y, sensor['reach'], FoodAgent))
+        for sensor, reach in zip(MainAgent.food_detector, [self.sensY['reach'], self.sensO['reach'], self.sensX['reach']]):
+            for x, y in sensor:
+                obsList.append(self.gameInst.sensor(x, y, reach, FoodAgent))
         return np.array(obsList)
 
-    def doEnemySensor(self, orientation=0):
+    def doEnemySensor(self):
         obsList = []
-        for sensor in self.enemySensor:
-            for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-                effective_x, effective_y = self.orientation(x, y, orientation)
-                obsList.append(self.gameInst.sensor(effective_x, effective_y, sensor['reach'], EnemyAgent))
-
+        for sensor, reach in zip(MainAgent.enemy_detector, [self.sensO['reach'], self.sensX['reach']]):
+            for x, y in sensor:
+                obsList.append(self.gameInst.sensor(x, y, reach, EnemyAgent))
         return np.array(obsList)
 
-    def doObstacleSensor(self, orientation=0):
+    def doObstacleSensor(self):
         obsList = []
-        for sensor in self.obstacleSensor:
-            for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-                effective_x, effective_y = self.orientation(x, y, orientation)
-                try:
-                    if self.gameInst.at(effective_x, effective_y) == 'O':
-                        obsList.append(1)
-                        continue
-                except IndexError:
-                    obsList.append(0)
+        for x, y in MainAgent.obstacle_detector:
+            effective_x, effective_y = self.x + x, self.y + y
+            try:
+                if self.gameInst.at(effective_x, effective_y) == 'O':
+                    obsList.append(1)
                     continue
-
+            except IndexError:
                 obsList.append(0)
+                continue
+
+            obsList.append(0)
         return np.array(obsList)
 
     def orientation(self, x, y, orientation):
@@ -167,7 +192,7 @@ class MainAgent(Agent):
 
         return self.x + new_diffx, self.y + new_diffy
 
-    def doAllSensors(self, orientation=0):
+    def doAllSensors(self):
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
 		and self.obstacleSensor; according to a given orientation.
 
@@ -177,23 +202,23 @@ class MainAgent(Agent):
 		(3 - Facing left)
 		:return: A tuple (food, enemy, obstacle) of bit-encoded np.array objects corresponding to each sensor output
 		"""
-        return self.doFoodSensor(orientation), self.doEnemySensor(orientation), self.doObstacleSensor(orientation)
 
-    def getLabeledPositions(self, orientation=0):
+        return self.doFoodSensor(), self.doEnemySensor(), self.doObstacleSensor()
+
+    def getLabeledPositions(self):
         out = []
         identifier = 0
         for sensor, label in zip([self.sensY, self.sensO, self.sensX, self.sensorWall], ['Y', 'O', 'X', 'W']):
             for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
-                effective_x, effective_y = self.orientation(x, y, orientation)
+                effective_x, effective_y = self.orientation(x, y, 0)
                 out.append({'coords': (effective_x, effective_y),
                             'label': label,
-                            'orientation': orientation,
                             'id': identifier})
                 identifier += 1
         return out
 
 
-    def observ(self, orientation=0):
+    def observ(self):
         """ Performs a scan of surrounding areas according to sensors defined by self.foodSensor, self.enemySensor
 		and self.obstacleSensor; according to a given orientation.
 
@@ -204,27 +229,35 @@ class MainAgent(Agent):
 		:return: A array [food, enemy, obstacle,energy,previous_action,colide] of bit-encoded np.array objects corresponding to each output
 		"""
 
-        food, ennemy, obstacle = self.doAllSensors(orientation)
+        food, ennemy, obstacle = self.doAllSensors()
 
         energy = self.energy
         max_energy = self.max_energy
         previous_action = self.previous_action
 
         obs = [*food, *ennemy, *obstacle]
+        c = len(obs)
+        n = []
+
         for i in range(16):
             if i <= round(16 / max_energy * energy):
                 obs.append(1)
+                n.append(uwu + len(n))
             else:
                 obs.append(0)
+                n.append(c + len(n))
         obs = obs + [*previous_action]
+        n.extend((i + c) for i in range(len(self.previous_action)))
         if self.did_collide:
             obs.append(1)
+            n.append(c + len(n))
         else:
             obs.append(0)
-        return obs
+            n.append(c + len(n))
+        return np.array(obs)
 
     def observation(self):
-        return [self.observ(i) for i in range(4)]
+        return self.observ()
 
     def step(self, ac):
         """ac between 0 and 3 corresponding to the action taken"""

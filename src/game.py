@@ -20,7 +20,6 @@ class GameInstance:
         self.initialEnemyPositions = []
         self.initialEmptyTiles = []
         self.initialWalls = []
-        self.initialFood = 1
         self.foodPositionsToRestore = {}
 
     def addMainAgent(self, x, y):
