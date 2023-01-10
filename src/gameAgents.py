@@ -77,17 +77,28 @@ class MainAgent(Agent):
         sensorY = {
             'radius': 10,
             'resolution': 2,
-            'minDist': 10
+            'minDist': 10,
+            'reach': [(0, -2),
+                      (-1, -1), (0, -1), (1, -1),
+                      (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),
+                      (-1, 1), (0, 1), (1, 1),
+                      (0, 2)]
         }
         sensorO = {
             'radius': 6,
             'resolution': 2,
-            'minDist': 3
+            'minDist': 3,
+            'reach': [(-1, -1), (0, -1), (1, -1),
+                      (-1, 0), (0, 0), (1, 0),
+                      (-1, 1), (0, 1), (1, 1)]
         }
         sensorX = {
             'radius': 2,
             'resolution': 1,
-            'minDist': 1
+            'minDist': 1,
+            'reach': [(0, -1),
+                      (-1, 0), (0, 0), (1, 0),
+                      (0, 1)]
         }
 
         self.sensY = sensorY
@@ -109,17 +120,7 @@ class MainAgent(Agent):
         for sensor in self.foodSensor:
             for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
                 effective_x, effective_y = self.orientation(x, y, orientation)
-                try:
-                    if self.gameInst.isAgentAt(effective_x, effective_y):
-                        agent = self.gameInst.getAgentAt(effective_x, effective_y)
-                        if isinstance(agent, FoodAgent):
-                            obsList.append(1)
-                            continue
-                except IndexError:
-                    obsList.append(0)
-                    continue
-
-                obsList.append(0)
+                obsList.append(self.gameInst.sensor(effective_x, effective_y, sensor['reach'], FoodAgent))
         return np.array(obsList)
 
     def doEnemySensor(self, orientation=0):
@@ -127,17 +128,8 @@ class MainAgent(Agent):
         for sensor in self.enemySensor:
             for x, y in self.tilesInRadiusGen(sensor['radius'], sensor['resolution'], sensor['minDist']):
                 effective_x, effective_y = self.orientation(x, y, orientation)
-                try:
-                    if self.gameInst.isAgentAt(effective_x, effective_y):
-                        agent = self.gameInst.getAgentAt(effective_x, effective_y)
-                        if isinstance(agent, EnemyAgent):
-                            obsList.append(1)
-                            continue
-                except IndexError:
-                    obsList.append(0)
-                    continue
+                obsList.append(self.gameInst.sensor(effective_x, effective_y, sensor['reach'], EnemyAgent))
 
-                obsList.append(0)
         return np.array(obsList)
 
     def doObstacleSensor(self, orientation=0):

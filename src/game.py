@@ -63,6 +63,16 @@ class GameInstance:
     def getAgentAt(self, x, y):
         return self.agents[self.at(x, y)]
 
+    def sensor(self, x, y, reach_matrix, type_to_detect):
+        for offx, offy in reach_matrix:
+            try:
+                if self.isAgentAt(x + offx, y + offy):
+                    if isinstance(self.getAgentAt(x + offx, y + offy), type_to_detect):
+                        return 1
+            except IndexError:
+                continue
+        return 0
+
     def doMove(self, agent, deltaX, deltaY):
         if not self.movePossible(agent, deltaX, deltaY):
             if isinstance(agent, ag.MainAgent):
