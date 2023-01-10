@@ -29,7 +29,7 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 300
+    nb_play = 20
     nb_test = 50
     nb_train = 20
     anim_period = 100
@@ -122,7 +122,7 @@ def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix=
         new_ob, reward, done = env.step(action)
         if not test:
             agent.store(ob, new_ob, action, reward, done)
-            agent.learn()
+            agent.batchlearn()
         rsum += reward
         ob = new_ob
         step_count += 1
