@@ -212,7 +212,7 @@ class MainAgent(Agent):
 
         obs = [*food, *ennemy, *obstacle]
         for i in range(16):
-            if i == round(16 / max_energy * energy):
+            if i <= round(16 / max_energy * energy):
                 obs.append(1)
             else:
                 obs.append(0)
