@@ -242,7 +242,7 @@ class MainAgent(Agent):
         for i in range(16):
             if i <= round(16 / max_energy * energy):
                 obs.append(1)
-                n.append(uwu + len(n))
+                n.append(c + len(n))
             else:
                 obs.append(0)
                 n.append(c + len(n))
