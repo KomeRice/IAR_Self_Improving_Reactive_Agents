@@ -51,7 +51,8 @@ class QconAgent:
         self.net.eval()
         with torch.no_grad():
             for a in range(4):
-                Q[a] = self.net(torch.IntTensor(state)).view(-1)
+                state = torch.FloatTensor(state)
+                Q[a] = self.net(state).view(-1)
                 state = torch.tensor(obs_rot90(state))
         self.net.train()
         if self.test:
@@ -126,11 +127,11 @@ class QconAgent:
         self.net.train()
         for a in range(4):
             Q[a] = self.net(state).view(-1)
-            state = torch.tensor(obs_rot90(state))
+            state = torch.tensor(obs_rot90(state.squeeze()))
         self.net.eval()
         for a in range(4):
             next_Q[a] = self.target_net(next_state).view(-1)
-            next_state = torch.tensor(obs_rot90(state))
+            next_state = torch.tensor(obs_rot90(state.squeeze()))
         td_tgt = reward + (1 - done) * self.gamma * torch.max(next_Q)
         # Backpropagate loss
         self.net.train()
@@ -147,8 +148,11 @@ class QconAgent:
             return
 
         st,nx_st,ac,reward,done = self.recall()
-        for course in zip(st,nx_st,ac,reward,done):
-            self.learn(course)
+        if self.batch_size ==1:
+            self.learn((st,nx_st,ac,reward,done))
+        else:
+            for course in zip(st,nx_st,ac,reward,done):
+                self.learn(course)
     def save(self, outputDir):
         """Save model to output directory
         """

@@ -37,12 +37,12 @@ def main(args):
     do_anim = False
 
     #print("----------------------TRAINING QCON AGENT----------------------")
-    #agentClass = QconAgent
-    #training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    agentClass = QconAgent
+    training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     #print("----------------------DONE----------------------")
     print("----------------------TRAINING DQN AGENT----------------------")
-    agentClass = DQNAgent
-    training(env, agentClass, dirPrefix, filename="OutputDQN", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    #agentClass = DQNAgent
+    #training(env, agentClass, dirPrefix, filename="OutputDQN", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     print("----------------------DONE----------------------")
     #print("----------------------TRAINING QCONR AGENT----------------------")
     #agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
