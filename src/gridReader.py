@@ -6,7 +6,7 @@ from customExceptions import GridReaderError
 class GridReader:
     @staticmethod
     def readGrid(filePath):
-        knownSymbols = {' ', 'O', 'E', 'I'}
+        knownSymbols = {' ', 'O', 'E', 'I', '$'}
         with open(filePath, 'r') as f:
             lines = [l for l in f.readlines() if not l.startswith('#')]
 
@@ -66,6 +66,9 @@ class GridReader:
                 elif symbol == 'O':
                     g.grid[y][x] = 'O'
                     g.initialWalls.append((x, y))
+                elif symbol == '$':
+                    g.addFoodAgent(x, y)
+                    g.initialFoodPositions.append((x, y))
                 else:
                     emptyTiles.append((x, y))
 

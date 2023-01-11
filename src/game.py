@@ -18,6 +18,7 @@ class GameInstance:
         self.verbose = False
         self.initialMainAgentPosition = []
         self.initialEnemyPositions = []
+        self.initialFoodPositions = []
         self.initialEmptyTiles = []
         self.initialWalls = []
         self.initialFood = 1
@@ -173,6 +174,9 @@ class GameInstance:
             self.addEnemyAgent(x, y)
         for x, y in self.initialMainAgentPosition:
             self.addMainAgent(x, y)
+        for x, y in self.initialFoodPositions:
+            self.addFoodAgent(x, y)
+            self.remainingFood += 1
         self.distributeFood()
 
     def reset(self):
