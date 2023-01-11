@@ -148,14 +148,15 @@ class MainAgent(Agent):
         obsList = []
         for sensor, reach in zip(MainAgent.food_detector, [self.sensY['reach'], self.sensO['reach'], self.sensX['reach']]):
             for x, y in sensor:
-                obsList.append(self.gameInst.sensor(x, y, reach, FoodAgent))
+                sens = self.gameInst.sensor(self.x + y, self.y + x, reach, FoodAgent)
+                obsList.append(sens)
         return np.array(obsList)
 
     def doEnemySensor(self):
         obsList = []
         for sensor, reach in zip(MainAgent.enemy_detector, [self.sensO['reach'], self.sensX['reach']]):
             for x, y in sensor:
-                obsList.append(self.gameInst.sensor(x, y, reach, EnemyAgent))
+                obsList.append(self.gameInst.sensor(self.x + y, self.y + x, reach, EnemyAgent))
         return np.array(obsList)
 
     def doObstacleSensor(self):

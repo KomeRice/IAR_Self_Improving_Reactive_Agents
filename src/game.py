@@ -65,8 +65,10 @@ class GameInstance:
     def sensor(self, x, y, reach_matrix, type_to_detect):
         for offx, offy in reach_matrix:
             try:
-                if self.isAgentAt(x + offx, y + offy):
-                    if isinstance(self.getAgentAt(x + offx, y + offy), type_to_detect):
+                checkx = x + offx
+                checky = y + offy
+                if self.isAgentAt(checkx, checky):
+                    if isinstance(self.getAgentAt(checkx, checky), type_to_detect):
                         return 1
             except IndexError:
                 continue
