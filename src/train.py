@@ -3,7 +3,7 @@ import os.path
 import sys
 from tqdm import tqdm
 from gridReader import GridReader
-from qconAgent import QconAgent,DQNAgent
+from qconAgent import QconAgent,DQNAgent, ArticleAgent
 from utils import plot_examples, save_plot
 import imageio.v2 as imageio
 import time
@@ -29,7 +29,7 @@ def main(args):
     except FileExistsError:
         print(f'Unexpected folder already exists: {dirPrefix}')
     env = GridReader.readGrid(envPath)
-    nb_play = 20
+    nb_play = 300
     nb_test = 50
     nb_train = 20
     anim_period = 100
@@ -37,12 +37,15 @@ def main(args):
     do_anim = False
 
     #print("----------------------TRAINING QCON AGENT----------------------")
-    agentClass = QconAgent
-    training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    #gentClass = QconAgent
+    #training(env, agentClass, dirPrefix, filename="Output", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
     #print("----------------------DONE----------------------")
     print("----------------------TRAINING DQN AGENT----------------------")
     #agentClass = DQNAgent
     #training(env, agentClass, dirPrefix, filename="OutputDQN", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period)
+    agent = ArticleAgent(savedir='QAgent')
+    training(env, ArticleAgent, dirPrefix, filename="OutputDQN2", nb_play=nb_play, nb_test=nb_test, nb_train=nb_train, animation=do_anim, anim_period=anim_period, test_period=test_period,
+             agent=agent)
     print("----------------------DONE----------------------")
     #print("----------------------TRAINING QCONR AGENT----------------------")
     #agentR = QconAgent(dirPrefix + "saveR/", batch_size=32, memory_size=10000)  # action replay
@@ -72,13 +75,15 @@ def training(env, agentClass, dirPrefix, filename, nb_play=20, nb_train=20, nb_t
     for i in tqdm(range(nb_play)):
         meanRsum, meanFoodEaten = 0, 0
         for run in range(nb_train):
-            if animation and run == nb_train -1:
+            if animation and run == nb_train -1 and nb_play > 290:
                 rsum, foodEaten = simulation(env, agent, test=False, save_animation=True, dirPrefix=dirPrefix,
                                              run_name=f'{filename}_play{i}_run{run}_train')
             else:
                 rsum, foodEaten = simulation(env, agent, test=False)
+            if isinstance(agent, ArticleAgent):
+                agent.save_courses()
         for test in range(nb_test):
-            if animation and test == nb_test - 1:
+            if animation and test == nb_test - 1 and nb_play > 290:
                 rsum, foodEaten = simulation(env, agent, test=True, r=r, save_animation=True,
                                              dirPrefix=dirPrefix,
                                              run_name=f'{filename}_play{i}_test{test}')
@@ -90,12 +95,16 @@ def training(env, agentClass, dirPrefix, filename, nb_play=20, nb_train=20, nb_t
         meanRsum /= nb_test
         meanFoodEaten /= nb_test
 
+        if isinstance(agent, ArticleAgent):
+            agent.batch_learn()
+        agent.test = False
+
         cur_result = f'{i + 1},{meanRsum},{meanFoodEaten}\n'
         print(f'\n{cur_result}')
         csvFile.write(cur_result)
 
-        if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
-            agent.save(f'{dirPrefix}/QAgent/save_{i + 1}_{filename}')
+        #if (i + 1) % freqSave == 0 or (i + 1) == nb_play:
+        #    agent.save(f'{dirPrefix}/QAgent/save_{i + 1}_{filename}')
     csvFile.close()
 
 
@@ -121,8 +130,11 @@ def simulation(env, agent, test=False, r=False, save_animation=False, dirPrefix=
         action = agent.act(ob)
         new_ob, reward, done = env.step(action)
         if not test:
-            agent.store(ob, new_ob, action, reward, done)
-            agent.batchlearn()
+            if isinstance(agent, ArticleAgent):
+                agent.store_learn(ob, action, new_ob, reward, done)
+            else:
+                agent.store(ob, new_ob, action, reward, done)
+                agent.batchlearn()
         rsum += reward
         ob = new_ob
         step_count += 1

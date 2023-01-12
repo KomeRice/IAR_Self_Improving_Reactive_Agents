@@ -2,9 +2,8 @@ import copy
 import random
 import numpy as np
 from collections import deque
-from utils import NN, NNDQN, obs_rot90
+from utils import NN, NNDQN, obs_rot90, get_rotator
 import torch
-
 
 class QconAgent:
     def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=1, test=False):
@@ -163,7 +162,6 @@ class QconAgent:
         """
         self.net.load_state_dict(torch.load(inputDir, map_location=self.device))
 
-
 class DQNAgent(QconAgent):
     def __init__(self, savedir, env=None, nbStep=10000, batch_size=1, memory_size=100, test=False):
         super().__init__(savedir, env, nbStep, batch_size, memory_size, test)
@@ -213,3 +211,111 @@ class DQNAgent(QconAgent):
                 action_idx = random.randint(0,3)
         self.curr_step += 1
         return action_idx
+
+class ArticleAgent:
+    def __init__(self, savedir, memory_size=100, batch_size=12):
+        self.test = False
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.net = NNDQN(145, 1).to(self.device)
+        self.target_net = NNDQN(145, 1).to(self.device)
+        self.target_net.load_state_dict(self.net.state_dict())
+
+        self.gamma = 0.9
+        self.lr = 1e-3
+        self.sync_rate = 1000
+
+        self.memory_size = memory_size
+        self.batch_size = batch_size
+        self.memory = deque(maxlen=self.memory_size)
+        self.buffer = []
+        self.savedir = savedir
+
+        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr)
+        self.curr_step = 0
+
+    def act(self, obs):
+        self.curr_step += 1
+        with torch.no_grad():
+            Q = np.zeros(4)
+            for a in range(4):
+                Q[a] = self.net(torch.tensor(obs, dtype=torch.float32, device=self.device)).detach().cpu().numpy()[0]
+                obs = obs[get_rotator()]
+        if self.test:
+            return np.argmax(Q)
+        else:
+            prob = []
+            for a in range(4):
+                prob.append(np.exp(Q[a] / 0.005))
+            total = np.sum(prob)
+            p = [i / total for i in prob]
+            return np.random.choice(range(4), p=p)
+
+    def recall(self):
+        """
+        Retrieve a batch of experiences from memory
+        """
+        batch = []
+        for i in range(self.batch_size):
+            n = len(self.memory)
+            w = min(3.0, 1 + 0.02 * n)
+            r = random.uniform(0, 1)
+            k = n * np.log(1 + r * (np.exp(w) - 1)) / w
+            batch.append(self.memory[int(k)])
+        return batch
+
+    def save(self):
+        torch.save(self.net.state_dict(), self.savedir)
+
+    def load(self, inputDir):
+        self.net.load_state_dict(torch.load(inputDir))
+
+    def batch_learn(self):
+        if self.test:
+            return
+        [self.learn(c) for c in self.recall()]
+
+    def learn(self, batch):
+        batch_size = len(batch)
+
+        ob, action, reward, new_ob, done = map(list, zip(*batch))
+
+        ob_v = torch.tensor(np.array(ob).reshape(-1, 145), dtype=torch.float32)
+        action_v = torch.tensor(np.array(action).reshape(-1), dtype=torch.float32)
+        new_ob_v = torch.tensor(np.array(new_ob).reshape(-1, 145), dtype=torch.float32)
+        reward_v = torch.tensor(np.array(reward).reshape(-1), dtype=torch.float32)
+        done_v = torch.tensor(np.array(done).reshape(-1), dtype=torch.float32)
+
+        Q_next = torch.zeros((batch_size, 4)).to(self.device)
+        indices = [[i] * 145 for i in range(batch_size)]
+        rotators = [get_rotator() for _ in range(batch_size)]
+        with torch.no_grad():
+            for a in range(4):
+                Q_next[:, a] = self.target_net(new_ob_v).view(-1)
+                new_ob_v = new_ob_v[indices, rotators]
+        y = reward_v + (1 - done_v) * self.gamma * torch.max(Q_next, dim=1)[0]
+        Q = torch.zeros((batch_size, 4)).to(self.device)
+        for a in range(4):
+            Q[:, a] = self.net(ob_v).view(-1)
+            ob_v = ob_v[indices, rotators]
+        loss = torch.nn.MSELoss()(y.detach(), Q[range(batch_size), np.array(action_v.detach().cpu().numpy())])
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        if self.curr_step % self.sync_rate == 0:
+            self.target_net.load_state_dict(self.net.state_dict())
+
+    def store(self, ob, action, new_ob, reward, done):
+        if not self.test:
+            tr = (ob, action, reward, new_ob, done)
+            self.memory.append(tr)
+
+    def store_learn(self, ob, action, new_ob, reward, done):
+        tr = (ob, action, reward, new_ob, done)
+        self.buffer.append(tr)
+        last = self.buffer[-1]
+        self.learn([last])
+
+    def save_courses(self):
+        self.memory.append(self.buffer)
+        self.buffer = []

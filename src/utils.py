@@ -104,7 +104,6 @@ class NNDQN(nn.Module):
             nn.ReLU(),
             nn.Linear(512, output_dim)
         )
-        self.layers.apply(set_weigths)
 
     def forward(self,x):
         return self.layers(x)
